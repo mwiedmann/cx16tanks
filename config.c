@@ -12,15 +12,15 @@ void init() {
     // Configure the joysticks
     joy_install(cx16_std_joy);
 
-    // Enable one layer
-    VERA.display.video = 0b11010001;
+    // Enable both layers
+    VERA.display.video = 0b11110001;
 
     // With 16 pixel tiles, we don't need as many tiles (might need more later for scrolling)
     // Only 640/16 = 40, 480/16=30 (40x30 tile resolution now)
     // Set the Map Height=0 (32), Width=1 (64) // NOW 256x64
     // Set Color Depth to 8 bpp mode
-    VERA.layer1.config = 0b10100011;
     VERA.layer0.config = 0b10100011;
+    VERA.layer1.config = 0b00010011; // 64x32 for layer 1
 
     // Get bytes 16-9 of the MapBase addresses and set on both layers
     VERA.layer0.mapbase = L0_MAPBASE_ADDR>>9;
@@ -55,7 +55,7 @@ void clearLayer0() {
 
 void clearLayer1() {
     // Note we need a `short` here because there are more than 255 tiles
-    unsigned short i;
+    unsigned short x,y;
 
     // Clear layer 1
     VERA.address = L1_MAPBASE_ADDR;
@@ -64,9 +64,11 @@ void clearLayer1() {
     VERA.address_hi |= 0b10000;
 
     // Empty tiles
-    for (i=0; i<MAPBASE_TILE_COUNT; i++) {
-        VERA.data0 = 0;
-        VERA.data0 = 0;
+    for (y=0; y<L1_MAPBASE_TILE_HEIGHT; y++) {
+        for (x=0; x<L1_MAPBASE_TILE_WIDTH; x++) {
+            VERA.data0 = y == 14 || y == 15 ? 2 : 0;
+            VERA.data0 = y == 15 ? 0b1000 : 0;
+        }
     }
 }
 

@@ -15,7 +15,7 @@
 unsigned char irqHandlerStack[IRQ_HANDLER_STACK_SIZE];
 
 short scrollY1 = 0, scrollX1 = 0, scrollY2 = 0, scrollX2 = 0;
-unsigned char tileX, tileY, zoomMode = 0, gameMode = 1, go;
+unsigned char tileX, tileY, zoomMode = 0, gameMode = 1, go, irqLineMode;
 short ballAX, ballAY, tankAX, tankAY;
 short ballBX, ballBY, tankBX, tankBY;
 short moveX, moveY, tankAIMoveX, tankAIMoveY;
@@ -113,7 +113,7 @@ void getCollisionTile(unsigned short x, unsigned short y, unsigned char *l0Tile)
 }
 
 void createTiles() {
-    unsigned short i;
+    unsigned short i,x,y;
     
     // Clear layer 0
     VERA.address = TILEBASE_ADDR;
@@ -129,6 +129,13 @@ void createTiles() {
     // Solid tile
     for (i=0; i<256; i++) {
         VERA.data0 = 15;
+    }
+
+    // Solid tile
+    for (y=0; y<16; y++) {
+        for (x=0; x<16; x++) {
+            VERA.data0 = y>7 ? 8 : 0;
+        }
     }
 
     // Ball tile
@@ -194,8 +201,10 @@ void drawMaze() {
 
 unsigned char irqHandler() {
     if (VERA.irq_flags & 0b10) {
-        if (VERA.irq_raster < 240) {
+       if (irqLineMode == 0) {
             VERA.irq_raster = 240;
+            VERA.irq_enable = 0b00000011; 
+            irqLineMode = 1;
 
             if (tankAX - scrollX1 < SCROLL_X_MIN) {
                 scrollX1 = tankAX - SCROLL_X_MIN;
@@ -225,6 +234,8 @@ unsigned char irqHandler() {
             VERA.layer0.vscroll = scrollY1;
         } else {
             VERA.irq_raster = 0;
+            VERA.irq_enable = 0b00000011; 
+            irqLineMode = 0;
 
             if (tankBX - scrollX2 < SCROLL_X_MIN) {
                 scrollX2 = tankBX - SCROLL_X_MIN;
@@ -254,7 +265,6 @@ unsigned char irqHandler() {
             VERA.layer0.vscroll = scrollY2-240;
         }
         
-        // VERA.irq_enable= 0b00000011; // 0b00000100;
         VERA.irq_flags = 0b10;
 
         return IRQ_HANDLED; 
@@ -375,8 +385,9 @@ void main() {
     // Setup the IRQ handler for sprite collisions
     set_irq(&irqHandler, irqHandlerStack, IRQ_HANDLER_STACK_SIZE);
 
+    irqLineMode = 0;
     VERA.irq_raster = 0;
-    VERA.irq_enable|= 0b00000010; // 0b00000100;
+    VERA.irq_enable = 0b00000011;
 
     while(1) {
         // Set the zoom level
