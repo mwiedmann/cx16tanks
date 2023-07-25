@@ -27,7 +27,7 @@ short moveX, moveY, tankAIMoveX, tankAIMoveY;
 #define SCROLL_X_MAX 320
 #define SCROLL_Y_MIN 80
 #define SCROLL_Y_MAX 128
-#define SCROLL_X_OVERALL_MAX (MAPBASE_TILE_WIDTH * 16)-640
+#define SCROLL_X_OVERALL_MAX ((MAPBASE_TILE_WIDTH+8) * 16)-640 // +8 for the UI overlay on the right
 #define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
 
 unsigned char starter[] = {
@@ -304,30 +304,30 @@ void test() {
     }
 }
 
-unsigned char moveTank(unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y) {
+unsigned char moveTank(unsigned char speed, unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y) {
     unsigned char l0Tile;
     unsigned char moved = 0;
 
     if (moveLeft) {
-        getCollisionTile((*x)-2, (*y), &l0Tile);
+        getCollisionTile((*x)-speed, (*y), &l0Tile);
         if (l0Tile == 0) {
-            getCollisionTile((*x)-2, (*y)+16, &l0Tile);
+            getCollisionTile((*x)-speed, (*y)+16, &l0Tile);
             if (l0Tile == 0) {
-                getCollisionTile((*x)-2, (*y)+31, &l0Tile);
+                getCollisionTile((*x)-speed, (*y)+31, &l0Tile);
                 if (l0Tile == 0) {
-                    (*x)-= 2;
+                    (*x)-= speed;
                     moved=1;
                 }
             }
         }
     } else if (moveRight) {
-        getCollisionTile((*x)+31+2, (*y), &l0Tile);
+        getCollisionTile((*x)+31+speed, (*y), &l0Tile);
         if (l0Tile == 0) {
-            getCollisionTile((*x)+31+2, (*y)+16, &l0Tile);
+            getCollisionTile((*x)+31+speed, (*y)+16, &l0Tile);
             if (l0Tile == 0) {
-                getCollisionTile((*x)+31+2, (*y)+31, &l0Tile);
+                getCollisionTile((*x)+31+speed, (*y)+31, &l0Tile);
                 if (l0Tile == 0) {
-                    (*x)+= 2;
+                    (*x)+= speed;
                     moved=1;
                 }
             }
@@ -335,25 +335,25 @@ unsigned char moveTank(unsigned char moveLeft, unsigned char moveRight, unsigned
     }
 
     if (moveUp) {
-        getCollisionTile((*x), (*y)-2, &l0Tile);
+        getCollisionTile((*x), (*y)-speed, &l0Tile);
         if (l0Tile == 0) {
-            getCollisionTile((*x)+16, (*y)-2, &l0Tile);
+            getCollisionTile((*x)+16, (*y)-speed, &l0Tile);
             if (l0Tile == 0) {
-                getCollisionTile((*x)+31, (*y)-2, &l0Tile);
+                getCollisionTile((*x)+31, (*y)-speed, &l0Tile);
                 if (l0Tile == 0) {
-                    (*y)-= 2;
+                    (*y)-= speed;
                     moved=1;
                 }
             }
         }
     } else if (moveDown) {
-        getCollisionTile((*x), (*y)+31+2, &l0Tile);
+        getCollisionTile((*x), (*y)+31+speed, &l0Tile);
         if (l0Tile == 0) {
-            getCollisionTile((*x)+16, (*y)+31+2, &l0Tile);
+            getCollisionTile((*x)+16, (*y)+31+speed, &l0Tile);
             if (l0Tile == 0) {
-                getCollisionTile((*x)+31, (*y)+31+2, &l0Tile);
+                getCollisionTile((*x)+31, (*y)+31+speed, &l0Tile);
                 if (l0Tile == 0) {
-                    (*y)+= 2;
+                    (*y)+= speed;
                     moved=1;
                 }
             }
@@ -460,13 +460,13 @@ void main() {
                 }
             }
 
-            moveTank(JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankAX, &tankAY);
+            moveTank(2, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankAX, &tankAY);
             
             // Manual move for Tank B
-            // moveTank(JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankBX, &tankBY);
+            // moveTank(1, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankBX, &tankBY);
 
             // AI For Tank B
-            while (!moveTank(tankAIMoveX == -1, tankAIMoveX == 1, tankAIMoveY == -1, tankAIMoveX == 1, &tankBX, &tankBY)) {
+            while (!moveTank(1, tankAIMoveX == -1, tankAIMoveX == 1, tankAIMoveY == -1, tankAIMoveX == 1, &tankBX, &tankBY)) {
                 aiDir = rand();
                 aiDir>>=5;
                 dirToXY(aiDir, &tankAIMoveX, &tankAIMoveY);
