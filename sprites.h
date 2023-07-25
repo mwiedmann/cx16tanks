@@ -15,7 +15,7 @@
 
 void createSpriteGraphics();
 void spritesConfig();
-void move(unsigned char spriteNum, short x, short y, short scrollX, short scrollY);
+void move(unsigned char spriteNum, short x, short y, short scrollX, short scrollY, unsigned char zone);
 void toggle(unsigned char spriteNum, unsigned char show);
 
 #endif

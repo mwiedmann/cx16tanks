@@ -82,8 +82,20 @@ void toggle(unsigned char spriteNum, unsigned char show) {
     VERA.data0 = show ? 0b00001000 : 0; // Z-Depth=2 (or 0 to hide)
 }
 
-void move(unsigned char spriteNum, short x, short y, short scrollX, short scrollY) {
+void move(unsigned char spriteNum, short x, short y, short scrollX, short scrollY, unsigned char zone) {
     short finalX, finalY;
+
+    finalY = y-scrollY;
+    if ((zone == 0 && finalY >= 224) ||
+        (zone == 1 && finalY<=224)) {
+        finalY = 480;
+    }
+
+    // Set the X and Y values
+    finalX = x-scrollX;
+    if (finalX<0 || finalX >= 640) {
+        finalX = 640;
+    }
 
     // Update Sprite 1 X/Y Position
     // Point to Sprite 1 byte 2
@@ -91,17 +103,6 @@ void move(unsigned char spriteNum, short x, short y, short scrollX, short scroll
     VERA.address_hi = (SPRITE1_ADDR+(spriteNum*8))>>16;
     // Set the Increment Mode, turn on bit 4
     VERA.address_hi |= 0b10000;
-    
-    // Set the X and Y values
-    finalX = x-scrollX;
-    if (finalX<0 || finalX >= 640) {
-        finalX = 640;
-    }
-
-    finalY = y-scrollY;
-    if (finalY<0 || finalY >= 480) {
-        finalY = 480;
-    }
 
     VERA.data0 = finalX;
     VERA.data0 = finalX>>8;

@@ -383,10 +383,10 @@ void main() {
         clearLayers();
         drawMaze();
 
-        tankAX = 16*20;
-        tankAY = 16*4;
-        tankBX = 16*20;
-        tankBY = 16*4;
+        tankAX = 32*10;
+        tankAY = 32*2;
+        tankBX = 32*10;
+        tankBY = 32*7;
         ballAX = tankAX;
         ballAY = tankAY;
         moveX = 3;
@@ -435,7 +435,7 @@ void main() {
                     ballAY+= moveY;
                 }
 
-                move(SPRITE_NUM_BALL_A1, ballAX, ballAY+240, scrollX2, scrollY2);
+                move(SPRITE_NUM_BALL_A1, ballAX, ballAY+240, scrollX2, scrollY2, 0);
 
                 ballTicks++;
                 if (ballTicks > 180) {
@@ -457,14 +457,14 @@ void main() {
             }
 
             // Tank A on top screen
-            move(SPRITE_NUM_TANK_A1, tankAX, tankAY, scrollX1, scrollY1);
+            move(SPRITE_NUM_TANK_A1, tankAX, tankAY, scrollX1, scrollY1, 0);
             // Tank A "shadow" on 2nd screen
-            move(SPRITE_NUM_TANK_A2, tankAX, tankAY+240, scrollX2, scrollY2);
+            move(SPRITE_NUM_TANK_A2, tankAX, tankAY+240, scrollX2, scrollY2, 1);
 
             // Tank B "shadow" on top screen
-            move(SPRITE_NUM_TANK_B1, tankBX, tankBY, scrollX1, scrollY1);
+            move(SPRITE_NUM_TANK_B1, tankBX, tankBY, scrollX1, scrollY1, 0);
             // Tank A "shadow" on 2nd screen
-            move(SPRITE_NUM_TANK_B2, tankBX, tankBY+240, scrollX2, scrollY2);
+            move(SPRITE_NUM_TANK_B2, tankBX, tankBY+240, scrollX2, scrollY2, 1);
 
             while(!go);
             
