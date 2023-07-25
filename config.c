@@ -12,8 +12,8 @@ void init() {
     // Configure the joysticks
     joy_install(cx16_std_joy);
 
-    // Enable both layers
-    VERA.display.video = 0b11110001;
+    // Enable one layer
+    VERA.display.video = 0b11010001;
 
     // With 16 pixel tiles, we don't need as many tiles (might need more later for scrolling)
     // Only 640/16 = 40, 480/16=30 (40x30 tile resolution now)

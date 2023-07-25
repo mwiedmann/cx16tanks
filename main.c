@@ -4,26 +4,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <joystick.h>
+#include <6502.h>
 
 #include "config.h"
 #include "utils.h"
 #include "wait.h"
 #include "sprites.h"
 
-short scrollY = 0, previousScroll = 0, scrollX = 0;
-unsigned char tileX, tileY, zoomMode = 0, gameMode = 1;
-short ballX, ballY, tankX, tankY;
-short moveX, moveY;
+#define IRQ_HANDLER_STACK_SIZE 8
+unsigned char irqHandlerStack[IRQ_HANDLER_STACK_SIZE];
+
+short scrollY1 = 0, scrollX1 = 0, scrollY2 = 0, scrollX2 = 0;
+unsigned char tileX, tileY, zoomMode = 0, gameMode = 1, go;
+short ballAX, ballAY, tankAX, tankAY;
+short ballBX, ballBY, tankBX, tankBY;
+short moveX, moveY, tankAIMoveX, tankAIMoveY;
 
 #define SECTION_COUNT 4
 #define SECTION_SIZE 10
 #define MAZE_SECTIONS 12
 #define SCROLL_X_MIN 220
 #define SCROLL_X_MAX 420
-#define SCROLL_Y_MIN 140
-#define SCROLL_Y_MAX 340
+#define SCROLL_Y_MIN 90
+#define SCROLL_Y_MAX 130
 #define SCROLL_X_OVERALL_MAX (MAPBASE_TILE_WIDTH * 16)-640
-#define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-480
+#define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
 
 unsigned char starter[] = {
 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
@@ -90,66 +95,6 @@ unsigned char t4[] = {
 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
 };
 
-// unsigned char starter[] = {
-// 1, 1, 1, 0, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
-// 0, 1, 1, 1, 1, 1, 0,
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 1, 1, 1, 1,
-// 1, 1, 1, 0, 1, 1, 1,
-// };
-
-// unsigned char t1[] = {
-// 1, 1, 1, 0, 1, 1, 1,
-// 1, 0, 0, 0, 1, 1, 1,
-// 1, 0, 1, 0, 1, 1, 1,
-// 0, 0, 1, 0, 0, 0, 0,
-// 1, 1, 1, 1, 1, 0, 1,
-// 1, 1, 1, 0, 0, 0, 1,
-// 1, 1, 1, 0, 1, 1, 1,
-// };
-
-// unsigned char t2[] = {
-// 1, 1, 1, 0, 1, 1, 1,
-// 1, 1, 1, 0, 0, 0, 1,
-// 1, 1, 1, 0, 1, 0, 1,
-// 0, 0, 0, 0, 1, 0, 0,
-// 1, 0, 1, 1, 1, 1, 1,
-// 1, 0, 0, 0, 1, 1, 1,
-// 1, 1, 1, 0, 1, 1, 1,
-// };
-
-// unsigned char t3[] = {
-// 1, 1, 1, 0, 1, 1, 1,
-// 1, 1, 1, 0, 0, 0, 1,
-// 1, 1, 1, 1, 1, 0, 1,
-// 0, 0, 0, 0, 1, 0, 0,
-// 1, 1, 1, 0, 1, 0, 1,
-// 1, 1, 1, 0, 0, 0, 1,
-// 1, 1, 1, 0, 1, 1, 1,
-// };
-
-// unsigned char t4[] = {
-// 1, 1, 1, 0, 1, 1, 1,
-// 1, 0, 0, 0, 0, 1, 1,
-// 1, 0, 1, 1, 0, 1, 1,
-// 0, 0, 0, 1, 0, 0, 0,
-// 1, 1, 0, 1, 1, 0, 1,
-// 1, 1, 0, 0, 0, 0, 1,
-// 1, 1, 1, 0, 1, 1, 1,
-// };
-
-// unsigned char t5[] = {
-// 1, 1, 1, 0, 1, 1, 1,
-// 1, 0, 0, 0, 1, 1, 1,
-// 1, 0, 1, 0, 0, 0, 1,
-// 0, 0, 1, 1, 1, 0, 0,
-// 1, 0, 1, 1, 1, 0, 1,
-// 1, 0, 0, 0, 0, 0, 1,
-// 1, 1, 1, 0, 1, 1, 1,
-// };
-
 unsigned char* sections[] = {
     t1, t2, t3, t4
 };
@@ -165,13 +110,6 @@ void getCollisionTile(unsigned short x, unsigned short y, unsigned char *l0Tile)
     VERA.address = tileAddr;
     VERA.address_hi = tileAddr>>16;
     *l0Tile = VERA.data0;
-}
-
-void setScroll() {
-    VERA.layer0.vscroll = scrollY;
-    VERA.layer1.vscroll = scrollY;
-    VERA.layer0.hscroll = scrollX;
-    VERA.layer1.hscroll = scrollX;
 }
 
 void createTiles() {
@@ -233,11 +171,6 @@ void drawMaze() {
                     VERA.data0 = 0;
                 }
             }
-            
-            // sectionNum++;
-            // if (sectionNum == SECTION_COUNT) {
-            //     sectionNum = 0;
-            // }
         }
     }
 
@@ -256,181 +189,288 @@ void drawMaze() {
             }
         }
     }
-    
-    // VERA.address = L0_MAPBASE_ADDR;
-    // VERA.address_hi = L0_MAPBASE_ADDR>>16;
-    // // Always set the Increment Mode, turn on bit 4
-    // VERA.address_hi |= 0b10000;
+}
 
-    // for (i=0; i<MAPBASE_TILE_COUNT; i++) {
-    //     if (i % 128 == 0 || i % 128 == 39 || i < 40 || i > (128 * 29)) {
-    //         VERA.data0 = 1;
-    //     } else if (i > (128*4) && i < (128 * 26) && i % 4 == 0) {
-    //         VERA.data0 = 1;
-    //     } else {
-    //         VERA.data0 = 0;
-    //     }
 
-    //     VERA.data0 = 0; 
-    // }
+unsigned char irqHandler() {
+    if (VERA.irq_flags & 0b10) {
+        if (VERA.irq_raster < 240) {
+            VERA.irq_raster = 240;
+
+            if (tankAX - scrollX1 < SCROLL_X_MIN) {
+                scrollX1 = tankAX - SCROLL_X_MIN;
+            } else if (tankAX - scrollX1 > SCROLL_X_MAX) {
+                scrollX1 = tankAX - SCROLL_X_MAX;
+            }
+
+            if (tankAY - scrollY1 < SCROLL_Y_MIN) {
+                scrollY1 = tankAY - SCROLL_Y_MIN;
+            } else if (tankAY - scrollY1 > SCROLL_Y_MAX) {
+                scrollY1 = tankAY - SCROLL_Y_MAX;
+            }
+
+            if (scrollX1 < 0) {
+                scrollX1 = 0;
+            } else if (scrollX1 > SCROLL_X_OVERALL_MAX) {
+                scrollX1 = SCROLL_X_OVERALL_MAX;
+            }
+
+            if (scrollY1 < 0) {
+                scrollY1 = 0;
+            } else if (scrollY1 > SCROLL_Y_OVERALL_MAX) {
+                scrollY1 = SCROLL_Y_OVERALL_MAX;
+            }
+
+            VERA.layer0.hscroll = scrollX1;
+            VERA.layer0.vscroll = scrollY1;
+        } else {
+            VERA.irq_raster = 0;
+
+            if (tankBX - scrollX2 < SCROLL_X_MIN) {
+                scrollX2 = tankBX - SCROLL_X_MIN;
+            } else if (tankBX - scrollX2 > SCROLL_X_MAX) {
+                scrollX2 = tankBX - SCROLL_X_MAX;
+            }
+
+            if (tankBY - scrollY2 < SCROLL_Y_MIN) {
+                scrollY2 = tankBY - SCROLL_Y_MIN;
+            } else if (tankBY - scrollY2 > SCROLL_Y_MAX) {
+                scrollY2 = tankBY - SCROLL_Y_MAX;
+            }
+
+            if (scrollX2 < 0) {
+                scrollX2 = 0;
+            } else if (scrollX2 > SCROLL_X_OVERALL_MAX) {
+                scrollX2 = SCROLL_X_OVERALL_MAX;
+            }
+
+            if (scrollY2 < 0) {
+                scrollY2 = 0;
+            } else if (scrollY2 > SCROLL_Y_OVERALL_MAX) {
+                scrollY2 = SCROLL_Y_OVERALL_MAX;
+            }
+
+            VERA.layer0.hscroll = scrollX2;
+            VERA.layer0.vscroll = scrollY2-240;
+        }
+        
+        // VERA.irq_enable= 0b00000011; // 0b00000100;
+        VERA.irq_flags = 0b10;
+
+        return IRQ_HANDLED; 
+    } else {
+        go = 1;
+        return IRQ_HANDLED;
+    }
+
+    return IRQ_HANDLED; 
+    // return IRQ_NOT_HANDLED;
+}
+
+void test() {
+    clearLayers();
+    drawMaze();
+    scrollX1 = 0;
+    scrollY1 = 0;
+
+    // Setup the IRQ handler for sprite collisions
+    set_irq(&irqHandler, irqHandlerStack, IRQ_HANDLER_STACK_SIZE);
+
+    VERA.irq_raster = 0;
+    VERA.irq_enable |= 0b00000010; // 0b00000100;
+
+    while(1) {
+        scrollX1++;
+        // scrollY=0;
+
+        wait();
+        VERA.layer0.hscroll = scrollX1;
+        
+    }
+}
+
+unsigned char moveTank(unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y) {
+    unsigned char l0Tile;
+    unsigned char moved = 0;
+
+    if (moveLeft) {
+        getCollisionTile((*x)-2, (*y), &l0Tile);
+        if (l0Tile == 0) {
+            getCollisionTile((*x)-2, (*y)+16, &l0Tile);
+            if (l0Tile == 0) {
+                getCollisionTile((*x)-2, (*y)+31, &l0Tile);
+                if (l0Tile == 0) {
+                    (*x)-= 2;
+                    moved=1;
+                }
+            }
+        }
+    } else if (moveRight) {
+        getCollisionTile((*x)+31+2, (*y), &l0Tile);
+        if (l0Tile == 0) {
+            getCollisionTile((*x)+31+2, (*y)+16, &l0Tile);
+            if (l0Tile == 0) {
+                getCollisionTile((*x)+31+2, (*y)+31, &l0Tile);
+                if (l0Tile == 0) {
+                    (*x)+= 2;
+                    moved=1;
+                }
+            }
+        }
+    }
+
+    if (moveUp) {
+        getCollisionTile((*x), (*y)-2, &l0Tile);
+        if (l0Tile == 0) {
+            getCollisionTile((*x)+16, (*y)-2, &l0Tile);
+            if (l0Tile == 0) {
+                getCollisionTile((*x)+31, (*y)-2, &l0Tile);
+                if (l0Tile == 0) {
+                    (*y)-= 2;
+                    moved=1;
+                }
+            }
+        }
+    } else if (moveDown) {
+        getCollisionTile((*x), (*y)+31+2, &l0Tile);
+        if (l0Tile == 0) {
+            getCollisionTile((*x)+16, (*y)+31+2, &l0Tile);
+            if (l0Tile == 0) {
+                getCollisionTile((*x)+31, (*y)+31+2, &l0Tile);
+                if (l0Tile == 0) {
+                    (*y)+= 2;
+                    moved=1;
+                }
+            }
+        }
+    }
+
+    return moved;
+}
+
+void dirToXY(unsigned char dir, short *x, short *y) {
+    switch (dir) {
+        case 0 : *x=0; *y=-1; return;
+        case 1 : *x=1; *y=-1; return;
+        case 2 : *x=1; *y=0; return;
+        case 3 : *x=1; *y=1; return;
+        case 4 : *x=0; *y=1; return;
+        case 5 : *x=-1; *y=1; return;
+        case 6 : *x=-1; *y=0; return;
+        case 7 : *x=-1; *y=-1; return;
+    }
 }
 
 void main() {
-    unsigned char l0Tile, joy;
+    unsigned char l0Tile, joy, aiDir;
     unsigned short ballTicks, ballActive;
 
     init();
     createTiles();
+    createSpriteGraphics();
     spritesConfig();
+
+    // test();
+
+    // Setup the IRQ handler for sprite collisions
+    set_irq(&irqHandler, irqHandlerStack, IRQ_HANDLER_STACK_SIZE);
+
+    VERA.irq_raster = 0;
+    VERA.irq_enable|= 0b00000010; // 0b00000100;
 
     while(1) {
         // Set the zoom level
         clearLayers();
         drawMaze();
 
-        ballX = 16*5;
-        ballY = 16*5;
-        tankX = 16*20;
-        tankY = 16*4;
+        tankAX = 16*20;
+        tankAY = 16*4;
+        tankBX = 16*20;
+        tankBY = 16*4;
+        ballAX = tankAX;
+        ballAY = tankAY;
         moveX = 3;
         moveY = 3;
+
+        aiDir = 0;
+        dirToXY(aiDir, &tankAIMoveX, &tankAIMoveY);
 
         ballTicks = 0;
         ballActive = 0;
 
-        // Reset scrolling
-        scrollY = tankY - 240;
-        scrollX = tankX - 320;
-        setScroll();
-
-        toggle(SPRITE_NUM_TANK, 1);
-
-        // while(1);
-        // Main game loop
+        toggle(SPRITE_NUM_TANK_A1, 1);
+        toggle(SPRITE_NUM_TANK_A2, 1);
+        toggle(SPRITE_NUM_TANK_B1, 1);
+        toggle(SPRITE_NUM_TANK_B2, 1);
+        
         while(1) {
+            go = 0;
             joy = joy_read(0);
 
             // Shoot ball
             if (JOY_BTN_1(joy)) {
                 ballActive = 1;
                 ballTicks = 0;
-                ballX = tankX;
-                ballY = tankY;
-                toggle(SPRITE_NUM_BALL, 1);
+                ballAX = tankAX;
+                ballAY = tankAY;
+                toggle(SPRITE_NUM_BALL_A1, 1);
             }
-            
+
             if (ballActive) {
                 // Get the tiles on each layer the guy is currently touching
-                getCollisionTile(ballX+8+moveX, ballY+8, &l0Tile);
+                getCollisionTile(ballAX+8+moveX, ballAY+8, &l0Tile);
 
                 if (l0Tile != 0) {
                     moveX*= -1;
                 } else {
-                    ballX+= moveX;
+                    ballAX+= moveX;
                 }
                 
                 // Get the tiles on each layer the guy is currently touching
-                getCollisionTile(ballX+8, ballY+8+moveY, &l0Tile);
+                getCollisionTile(ballAX+8, ballAY+8+moveY, &l0Tile);
 
                 if (l0Tile != 0) {
                     moveY*= -1;
                 } else {
-                    ballY+= moveY;
+                    ballAY+= moveY;
                 }
 
-                move(SPRITE_NUM_BALL, ballX, ballY, scrollX, scrollY);
+                move(SPRITE_NUM_BALL_A1, ballAX, ballAY+240, scrollX2, scrollY2);
 
                 ballTicks++;
                 if (ballTicks > 180) {
                     ballActive = 0;
-                    toggle(SPRITE_NUM_BALL, 0);
+                    toggle(SPRITE_NUM_BALL_A1, 0);
                 }
             }
 
-            if (JOY_LEFT(joy)) {
-                getCollisionTile(tankX-2, tankY, &l0Tile);
-                if (l0Tile == 0) {
-                    getCollisionTile(tankX-2, tankY+16, &l0Tile);
-                    if (l0Tile == 0) {
-                        getCollisionTile(tankX-2, tankY+31, &l0Tile);
-                        if (l0Tile == 0) {
-                            tankX-= 2;
-                        }
-                    }
-                    
-                }
-            } else if (JOY_RIGHT(joy)) {
-                getCollisionTile(tankX+31+2, tankY, &l0Tile);
-                if (l0Tile == 0) {
-                    getCollisionTile(tankX+31+2, tankY+16, &l0Tile);
-                    if (l0Tile == 0) {
-                        getCollisionTile(tankX+31+2, tankY+31, &l0Tile);
-                        if (l0Tile == 0) {
-                            tankX+= 2;
-                        }
-                    }
-                    
-                }
+            moveTank(JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankAX, &tankAY);
+            
+            // Manual move for Tank B
+            // moveTank(JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankBX, &tankBY);
+
+            // AI For Tank B
+            while (!moveTank(tankAIMoveX == -1, tankAIMoveX == 1, tankAIMoveY == -1, tankAIMoveX == 1, &tankBX, &tankBY)) {
+                aiDir = rand();
+                aiDir>>=5;
+                dirToXY(aiDir, &tankAIMoveX, &tankAIMoveY);
             }
 
-            if (JOY_UP(joy)) {
-                getCollisionTile(tankX, tankY-2, &l0Tile);
-                if (l0Tile == 0) {
-                    getCollisionTile(tankX+16, tankY-2, &l0Tile);
-                    if (l0Tile == 0) {
-                        getCollisionTile(tankX+31, tankY-2, &l0Tile);
-                        if (l0Tile == 0) {
-                            tankY-= 2;
-                        }
-                    }
-                }
-            } else if (JOY_DOWN(joy)) {
-                getCollisionTile(tankX, tankY+31+2, &l0Tile);
-                if (l0Tile == 0) {
-                    getCollisionTile(tankX+16, tankY+31+2, &l0Tile);
-                    if (l0Tile == 0) {
-                        getCollisionTile(tankX+31, tankY+31+2, &l0Tile);
-                        if (l0Tile == 0) {
-                            tankY+= 2;
-                        }
-                    }
-                }
-            }
+            // Tank A on top screen
+            move(SPRITE_NUM_TANK_A1, tankAX, tankAY, scrollX1, scrollY1);
+            // Tank A "shadow" on 2nd screen
+            move(SPRITE_NUM_TANK_A2, tankAX, tankAY+240, scrollX2, scrollY2);
 
-            move(SPRITE_NUM_TANK, tankX, tankY, scrollX, scrollY);
+            // Tank B "shadow" on top screen
+            move(SPRITE_NUM_TANK_B1, tankBX, tankBY, scrollX1, scrollY1);
+            // Tank A "shadow" on 2nd screen
+            move(SPRITE_NUM_TANK_B2, tankBX, tankBY+240, scrollX2, scrollY2);
 
-            if (tankX - scrollX < SCROLL_X_MIN) {
-                scrollX = tankX - SCROLL_X_MIN;
-            } else if (tankX - scrollX > SCROLL_X_MAX) {
-                scrollX = tankX - SCROLL_X_MAX;
-            }
-
-            if (tankY - scrollY < SCROLL_Y_MIN) {
-                scrollY = tankY - SCROLL_Y_MIN;
-            } else if (tankY - scrollY > SCROLL_Y_MAX) {
-                scrollY = tankY - SCROLL_Y_MAX;
-            }
-
-            if (scrollX < 0) {
-                scrollX = 0;
-            } else if (scrollX > SCROLL_X_OVERALL_MAX) {
-                scrollX = SCROLL_X_OVERALL_MAX;
-            }
-
-            if (scrollY < 0) {
-                scrollY = 0;
-            } else if (scrollY > SCROLL_Y_OVERALL_MAX) {
-                scrollY = SCROLL_Y_OVERALL_MAX;
-            }
-
-            setScroll();
-            wait();
+            while(!go);
+            
+            //wait();
+            
+            // setScroll();
         }
-
-        // Reset scrolling
-        scrollY = 0;
-        scrollX = 0;
-        setScroll();
-        clearLayers();
     }
 }
