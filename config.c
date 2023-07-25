@@ -66,8 +66,13 @@ void clearLayer1() {
     // Empty tiles
     for (y=0; y<L1_MAPBASE_TILE_HEIGHT; y++) {
         for (x=0; x<L1_MAPBASE_TILE_WIDTH; x++) {
-            VERA.data0 = y == 14 || y == 15 ? 2 : 0;
-            VERA.data0 = y == 15 ? 0b1000 : 0;
+            if (x>31) {
+                VERA.data0 = 2;
+                VERA.data0 = 0;
+            } else {
+                VERA.data0 = y == 14 || y == 15 ? 3 : 0;
+                VERA.data0 = y == 15 ? 0b1000 : 0;
+            }
         }
     }
 }

@@ -23,10 +23,10 @@ short moveX, moveY, tankAIMoveX, tankAIMoveY;
 #define SECTION_COUNT 4
 #define SECTION_SIZE 10
 #define MAZE_SECTIONS 12
-#define SCROLL_X_MIN 220
-#define SCROLL_X_MAX 420
-#define SCROLL_Y_MIN 90
-#define SCROLL_Y_MAX 130
+#define SCROLL_X_MIN 192
+#define SCROLL_X_MAX 320
+#define SCROLL_Y_MIN 80
+#define SCROLL_Y_MAX 128
 #define SCROLL_X_OVERALL_MAX (MAPBASE_TILE_WIDTH * 16)-640
 #define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
 
@@ -131,7 +131,12 @@ void createTiles() {
         VERA.data0 = 15;
     }
 
-    // Solid tile
+    // Solid tile2
+    for (i=0; i<256; i++) {
+        VERA.data0 = 8;
+    }
+
+    // Divider tile
     for (y=0; y<16; y++) {
         for (x=0; x<16; x++) {
             VERA.data0 = y>7 ? 8 : 0;

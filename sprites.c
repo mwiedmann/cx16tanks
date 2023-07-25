@@ -28,7 +28,7 @@ void spritesConfig() {
     unsigned char i;
 
     // VRAM address for sprite 1 graphics...reusing a tile for now
-    unsigned long spriteGraphicAddress = TILEBASE_ADDR + (3 * 256);
+    unsigned long spriteGraphicAddress = TILEBASE_ADDR + (4 * 256);
 
     // Create 4 ball sprites
     for (i=0; i<4; i++) {
