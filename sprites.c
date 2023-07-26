@@ -3,6 +3,7 @@
 
 #include "sprites.h"
 #include "config.h"
+#include "tiles.h"
 
 void createSpriteGraphics() {
     unsigned short i;
@@ -108,4 +109,63 @@ void move(unsigned char spriteNum, short x, short y, short scrollX, short scroll
     VERA.data0 = finalX>>8;
     VERA.data0 = finalY;
     VERA.data0 = finalY>>8;
+}
+
+unsigned char moveTank(unsigned char speed, unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y) {
+    unsigned char l0Tile;
+    unsigned char moved = 0;
+
+    if (moveLeft) {
+        getCollisionTile((*x)-speed, (*y), &l0Tile);
+        if (l0Tile == 0) {
+            getCollisionTile((*x)-speed, (*y)+16, &l0Tile);
+            if (l0Tile == 0) {
+                getCollisionTile((*x)-speed, (*y)+31, &l0Tile);
+                if (l0Tile == 0) {
+                    (*x)-= speed;
+                    moved=1;
+                }
+            }
+        }
+    } else if (moveRight) {
+        getCollisionTile((*x)+31+speed, (*y), &l0Tile);
+        if (l0Tile == 0) {
+            getCollisionTile((*x)+31+speed, (*y)+16, &l0Tile);
+            if (l0Tile == 0) {
+                getCollisionTile((*x)+31+speed, (*y)+31, &l0Tile);
+                if (l0Tile == 0) {
+                    (*x)+= speed;
+                    moved=1;
+                }
+            }
+        }
+    }
+
+    if (moveUp) {
+        getCollisionTile((*x), (*y)-speed, &l0Tile);
+        if (l0Tile == 0) {
+            getCollisionTile((*x)+16, (*y)-speed, &l0Tile);
+            if (l0Tile == 0) {
+                getCollisionTile((*x)+31, (*y)-speed, &l0Tile);
+                if (l0Tile == 0) {
+                    (*y)-= speed;
+                    moved=1;
+                }
+            }
+        }
+    } else if (moveDown) {
+        getCollisionTile((*x), (*y)+31+speed, &l0Tile);
+        if (l0Tile == 0) {
+            getCollisionTile((*x)+16, (*y)+31+speed, &l0Tile);
+            if (l0Tile == 0) {
+                getCollisionTile((*x)+31, (*y)+31+speed, &l0Tile);
+                if (l0Tile == 0) {
+                    (*y)+= speed;
+                    moved=1;
+                }
+            }
+        }
+    }
+
+    return moved;
 }

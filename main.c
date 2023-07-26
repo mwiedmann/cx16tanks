@@ -10,199 +10,22 @@
 #include "utils.h"
 #include "wait.h"
 #include "sprites.h"
+#include "tiles.h"
 
 #define IRQ_HANDLER_STACK_SIZE 8
 unsigned char irqHandlerStack[IRQ_HANDLER_STACK_SIZE];
 
+// Global because these are accessed in the irq handler
 short scrollY1 = 0, scrollX1 = 0, scrollY2 = 0, scrollX2 = 0;
-unsigned char tileX, tileY, zoomMode = 0, gameMode = 1, go, irqLineMode;
-short ballAX, ballAY, tankAX, tankAY;
-short ballBX, ballBY, tankBX, tankBY;
-short moveX, moveY, tankAIMoveX, tankAIMoveY;
+unsigned char go, irqLineMode;
+short tankAX, tankAY, tankBX, tankBY;
 
-#define SECTION_COUNT 4
-#define SECTION_SIZE 10
-#define MAZE_SECTIONS 12
-#define SCROLL_X_MIN 192
-#define SCROLL_X_MAX 320
-#define SCROLL_Y_MIN 80
-#define SCROLL_Y_MAX 128
+#define SCROLL_X_MIN 224
+#define SCROLL_X_MAX 256
+#define SCROLL_Y_MIN 104
+#define SCROLL_Y_MAX 120
 #define SCROLL_X_OVERALL_MAX ((MAPBASE_TILE_WIDTH+8) * 16)-640 // +8 for the UI overlay on the right
 #define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
-
-unsigned char starter[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-0, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-0, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char t1[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 1, 0, 0, 1,
-0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
-1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
-1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char t2[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-1, 1, 1, 1, 1, 1, 0, 0, 1, 1,
-0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-1, 0, 0, 1, 0, 0, 1, 1, 1, 1,
-1, 0, 0, 0, 0, 0, 1, 1, 1, 1,
-1, 0, 0, 0, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char t3[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 1, 0, 0, 1,
-0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-1, 1, 1, 1, 1, 1, 1, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char t4[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 1, 1, 1, 1, 0, 0, 1,
-0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char* sections[] = {
-    t1, t2, t3, t4
-};
-
-void getCollisionTile(unsigned short x, unsigned short y, unsigned char *l0Tile) {
-    unsigned long tileAddr;
-
-    tileX = x>>4;
-    tileY = y>>4;
-
-    // Get tile on L0 guy is "touching"
-    tileAddr = L0_MAPBASE_ADDR + (((tileY * MAPBASE_TILE_WIDTH) + tileX) * 2);
-    VERA.address = tileAddr;
-    VERA.address_hi = tileAddr>>16;
-    *l0Tile = VERA.data0;
-}
-
-void createTiles() {
-    unsigned short i,x,y;
-    
-    // Clear layer 0
-    VERA.address = TILEBASE_ADDR;
-    VERA.address_hi = TILEBASE_ADDR>>16;
-    // Always set the Increment Mode, turn on bit 4
-    VERA.address_hi |= 0b10000;
-
-    // Empty tile
-    for (i=0; i<256; i++) {
-        VERA.data0 = 0;
-    }
-
-    // Solid tile
-    for (i=0; i<256; i++) {
-        VERA.data0 = 15;
-    }
-
-    // Solid tile2
-    for (i=0; i<256; i++) {
-        VERA.data0 = 8;
-    }
-
-    // Divider tile
-    for (y=0; y<16; y++) {
-        for (x=0; x<16; x++) {
-            VERA.data0 = y>7 ? 8 : 0;
-        }
-    }
-
-    // Ball tile
-    for (i=0; i<256; i++) {
-        if (i % 16 == 0 || i % 16 == 1 || i < 16 || i > 256-16) {
-            VERA.data0 = 0;
-        } else {
-            VERA.data0 = 4;
-        }
-    }
-}
-
-unsigned long mapBaseFromTileXY(unsigned short x, unsigned short y) {
-    return L0_MAPBASE_ADDR + (y * MAPBASE_TILE_WIDTH * 2) + (x * 2);
-}
-
-void drawMaze() {
-    // Note we need a `short` here because there are more than 255 tiles
-    unsigned char sectionX, sectionY, sectionNum, lastSectionNum, x, y, xCount, yCount;
-    unsigned long addr;
-
-    for (sectionY=0; sectionY<MAZE_SECTIONS; sectionY++) {
-        for (sectionX=0; sectionX<MAZE_SECTIONS; sectionX++) {
-            lastSectionNum = sectionNum;
-            do {
-                sectionNum = rand();
-                sectionNum>>=6;
-            } while(sectionNum == lastSectionNum || sectionNum>=SECTION_COUNT);
-            
-            for (y = sectionY * SECTION_SIZE, yCount=0; yCount < SECTION_SIZE; y++, yCount++){
-                for (x = sectionX * SECTION_SIZE, xCount=0; xCount < SECTION_SIZE; x++, xCount++) {
-                    addr = mapBaseFromTileXY(x,y);
-
-                    VERA.address = addr;
-                    VERA.address_hi = addr>>16;
-                    // Always set the Increment Mode, turn on bit 4
-                    VERA.address_hi |= 0b10000;
-
-                    VERA.data0 = sections[sectionNum][(yCount*SECTION_SIZE)+xCount];
-                    VERA.data0 = 0;
-                }
-            }
-        }
-    }
-
-    for (y=0; y<MAPBASE_TILE_HEIGHT; y++) {
-        for (x=0; x<MAPBASE_TILE_WIDTH; x++) {
-            if (y == 0 || y == (MAPBASE_TILE_HEIGHT - 1) || x == 0 || x == (MAPBASE_TILE_WIDTH - 1)) {
-                addr = mapBaseFromTileXY(x,y);
-
-                VERA.address = addr;
-                VERA.address_hi = addr>>16;
-                // Always set the Increment Mode, turn on bit 4
-                VERA.address_hi |= 0b10000;
-
-                VERA.data0 = 1;
-                VERA.data0 = 0;
-            }
-        }
-    }
-}
-
 
 unsigned char irqHandler() {
     if (VERA.irq_flags & 0b10) {
@@ -278,89 +101,8 @@ unsigned char irqHandler() {
         return IRQ_HANDLED;
     }
 
-    return IRQ_HANDLED; 
-    // return IRQ_NOT_HANDLED;
-}
-
-void test() {
-    clearLayers();
-    drawMaze();
-    scrollX1 = 0;
-    scrollY1 = 0;
-
-    // Setup the IRQ handler for sprite collisions
-    set_irq(&irqHandler, irqHandlerStack, IRQ_HANDLER_STACK_SIZE);
-
-    VERA.irq_raster = 0;
-    VERA.irq_enable |= 0b00000010; // 0b00000100;
-
-    while(1) {
-        scrollX1++;
-        // scrollY=0;
-
-        wait();
-        VERA.layer0.hscroll = scrollX1;
-        
-    }
-}
-
-unsigned char moveTank(unsigned char speed, unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y) {
-    unsigned char l0Tile;
-    unsigned char moved = 0;
-
-    if (moveLeft) {
-        getCollisionTile((*x)-speed, (*y), &l0Tile);
-        if (l0Tile == 0) {
-            getCollisionTile((*x)-speed, (*y)+16, &l0Tile);
-            if (l0Tile == 0) {
-                getCollisionTile((*x)-speed, (*y)+31, &l0Tile);
-                if (l0Tile == 0) {
-                    (*x)-= speed;
-                    moved=1;
-                }
-            }
-        }
-    } else if (moveRight) {
-        getCollisionTile((*x)+31+speed, (*y), &l0Tile);
-        if (l0Tile == 0) {
-            getCollisionTile((*x)+31+speed, (*y)+16, &l0Tile);
-            if (l0Tile == 0) {
-                getCollisionTile((*x)+31+speed, (*y)+31, &l0Tile);
-                if (l0Tile == 0) {
-                    (*x)+= speed;
-                    moved=1;
-                }
-            }
-        }
-    }
-
-    if (moveUp) {
-        getCollisionTile((*x), (*y)-speed, &l0Tile);
-        if (l0Tile == 0) {
-            getCollisionTile((*x)+16, (*y)-speed, &l0Tile);
-            if (l0Tile == 0) {
-                getCollisionTile((*x)+31, (*y)-speed, &l0Tile);
-                if (l0Tile == 0) {
-                    (*y)-= speed;
-                    moved=1;
-                }
-            }
-        }
-    } else if (moveDown) {
-        getCollisionTile((*x), (*y)+31+speed, &l0Tile);
-        if (l0Tile == 0) {
-            getCollisionTile((*x)+16, (*y)+31+speed, &l0Tile);
-            if (l0Tile == 0) {
-                getCollisionTile((*x)+31, (*y)+31+speed, &l0Tile);
-                if (l0Tile == 0) {
-                    (*y)+= speed;
-                    moved=1;
-                }
-            }
-        }
-    }
-
-    return moved;
+    // return IRQ_HANDLED; 
+    return IRQ_NOT_HANDLED;
 }
 
 void dirToXY(unsigned char dir, short *x, short *y) {
@@ -378,7 +120,11 @@ void dirToXY(unsigned char dir, short *x, short *y) {
 
 void main() {
     unsigned char l0Tile, joy, aiDir;
-    unsigned short ballTicks, ballActive;
+    short tankAIMoveX, tankAIMoveY;
+    Ball balls[2] = {
+        {0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0}
+    };
 
     init();
     createTiles();
@@ -403,16 +149,9 @@ void main() {
         tankAY = 32*2;
         tankBX = 32*10;
         tankBY = 32*7;
-        ballAX = tankAX;
-        ballAY = tankAY;
-        moveX = 3;
-        moveY = 3;
 
         aiDir = 0;
         dirToXY(aiDir, &tankAIMoveX, &tankAIMoveY);
-
-        ballTicks = 0;
-        ballActive = 0;
 
         toggle(SPRITE_NUM_TANK_A1, 1);
         toggle(SPRITE_NUM_TANK_A2, 1);
@@ -424,39 +163,44 @@ void main() {
             joy = joy_read(0);
 
             // Shoot ball
-            if (JOY_BTN_1(joy)) {
-                ballActive = 1;
-                ballTicks = 0;
-                ballAX = tankAX;
-                ballAY = tankAY;
+            if (!balls[0].active && JOY_BTN_1(joy)) {
+                balls[0].active = 1;
+                balls[0].ticksRemaining = 180;
+                balls[0].x = tankAX;
+                balls[0].y = tankAY;
+                balls[0].moveX = 3;
+                balls[0].moveY = 3;
+                balls[0].spriteNum = SPRITE_NUM_BALL_A1;
                 toggle(SPRITE_NUM_BALL_A1, 1);
+                toggle(SPRITE_NUM_BALL_A2, 1);
             }
 
-            if (ballActive) {
-                // Get the tiles on each layer the guy is currently touching
-                getCollisionTile(ballAX+8+moveX, ballAY+8, &l0Tile);
+            if (balls[0].active) {
+                getCollisionTile(balls[0].x+8+balls[0].moveX, balls[0].y+8, &l0Tile);
 
                 if (l0Tile != 0) {
-                    moveX*= -1;
+                    balls[0].moveX*= -1;
                 } else {
-                    ballAX+= moveX;
+                    balls[0].x+= balls[0].moveX;
                 }
                 
                 // Get the tiles on each layer the guy is currently touching
-                getCollisionTile(ballAX+8, ballAY+8+moveY, &l0Tile);
+                getCollisionTile(balls[0].x+8, balls[0].y+8+balls[0].moveY, &l0Tile);
 
                 if (l0Tile != 0) {
-                    moveY*= -1;
+                    balls[0].moveY*= -1;
                 } else {
-                    ballAY+= moveY;
+                    balls[0].y+= balls[0].moveY;
                 }
 
-                move(SPRITE_NUM_BALL_A1, ballAX, ballAY+240, scrollX2, scrollY2, 0);
+                move(SPRITE_NUM_BALL_A1, balls[0].x, balls[0].y, scrollX1, scrollY1, 0);
+                move(SPRITE_NUM_BALL_A2, balls[0].x, balls[0].y+240, scrollX2, scrollY2, 1);
 
-                ballTicks++;
-                if (ballTicks > 180) {
-                    ballActive = 0;
+                balls[0].ticksRemaining--;
+                if (balls[0].ticksRemaining == 0) {
+                    balls[0].active = 0;
                     toggle(SPRITE_NUM_BALL_A1, 0);
+                    toggle(SPRITE_NUM_BALL_A2, 0);
                 }
             }
 
@@ -482,11 +226,8 @@ void main() {
             // Tank A "shadow" on 2nd screen
             move(SPRITE_NUM_TANK_B2, tankBX, tankBY+240, scrollX2, scrollY2, 1);
 
+            // Waiting for VSYNC
             while(!go);
-            
-            //wait();
-            
-            // setScroll();
         }
     }
 }

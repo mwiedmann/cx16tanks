@@ -13,9 +13,21 @@
 #define SPRITE_NUM_TANK_B1 SPRITE_NUM_TANK_A2+1
 #define SPRITE_NUM_TANK_B2 SPRITE_NUM_TANK_B1+1
 
+typedef struct Ball {
+    unsigned char spriteNum;
+    unsigned char side;
+    unsigned char active;
+    short x;
+    short y;
+    short moveX;
+    short moveY;
+    unsigned short ticksRemaining;
+} Ball;
+
 void createSpriteGraphics();
 void spritesConfig();
 void move(unsigned char spriteNum, short x, short y, short scrollX, short scrollY, unsigned char zone);
 void toggle(unsigned char spriteNum, unsigned char show);
+unsigned char moveTank(unsigned char speed, unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y);
 
 #endif
