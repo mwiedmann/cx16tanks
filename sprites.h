@@ -24,7 +24,7 @@ typedef struct Ball {
     unsigned short ticksRemaining;
 } Ball;
 
-void createSpriteGraphics();
+void loadSpriteGraphics();
 void spritesConfig();
 void move(unsigned char spriteNum, short x, short y, short scrollX, short scrollY, unsigned char zone);
 void toggle(unsigned char spriteNum, unsigned char show);

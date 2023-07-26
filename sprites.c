@@ -4,25 +4,15 @@
 #include "sprites.h"
 #include "config.h"
 #include "tiles.h"
+#include "utils.h"
 
-void createSpriteGraphics() {
-    unsigned short i;
-    
-    // Clear layer 0
-    VERA.address = SPRITE_GRAPHICS_ADDR;
-    VERA.address_hi = SPRITE_GRAPHICS_ADDR>>16;
-    // Always set the Increment Mode, turn on bit 4
-    VERA.address_hi |= 0b10000;
+#define BARREL_COLOR 3
+#define TANK_A_COLOR 9
+#define TANK_B_COLOR 10
 
-    // Tank A 32x32
-    for (i=0; i<32*32; i++) {
-        VERA.data0 = 9;
-    }
-
-    // Tank B 32x32
-    for (i=0; i<32*32; i++) {
-        VERA.data0 = 10;
-    }
+void loadSpriteGraphics() {
+    loadFileToVRAM("tanka.bin", TANK_A_SPRITE_GRAPHICS_ADDR);
+    loadFileToVRAM("tankb.bin", TANK_B_SPRITE_GRAPHICS_ADDR);
 }
 
 void spritesConfig() {

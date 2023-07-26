@@ -128,7 +128,7 @@ void main() {
 
     init();
     createTiles();
-    createSpriteGraphics();
+    loadSpriteGraphics();
     spritesConfig();
 
     // test();
