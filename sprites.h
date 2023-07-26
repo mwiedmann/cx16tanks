@@ -29,5 +29,6 @@ void spritesConfig();
 void move(unsigned char spriteNum, short x, short y, short scrollX, short scrollY, unsigned char zone);
 void toggle(unsigned char spriteNum, unsigned char show);
 unsigned char moveTank(unsigned char speed, unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y);
+void tankTurret(unsigned char turret, unsigned char spriteNum, unsigned char tankGraphic);
 
 #endif

@@ -119,7 +119,7 @@ void dirToXY(unsigned char dir, short *x, short *y) {
 }
 
 void main() {
-    unsigned char l0Tile, joy, aiDir;
+    unsigned char l0Tile, joy, aiDir, tankATurret = 0, ticks = 0;
     short tankAIMoveX, tankAIMoveY;
     Ball balls[2] = {
         {0,0,0,0,0,0,0,0},
@@ -163,7 +163,7 @@ void main() {
             joy = joy_read(0);
 
             // Shoot ball
-            if (!balls[0].active && JOY_BTN_1(joy)) {
+            if (!balls[0].active && JOY_BTN_3(joy)) {
                 balls[0].active = 1;
                 balls[0].ticksRemaining = 180;
                 balls[0].x = tankAX;
@@ -206,6 +206,18 @@ void main() {
 
             moveTank(2, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankAX, &tankAY);
             
+            if (ticks % 8 == 0 && (JOY_BTN_1(joy) || JOY_BTN_2(joy))) {
+                // while(1);
+                tankATurret+= JOY_BTN_1(joy) ? 1 : -1;
+                if (tankATurret == 255) {
+                    tankATurret = 15;
+                } else if (tankATurret == 16) {
+                    tankATurret = 0;
+                }
+
+                tankTurret(tankATurret, SPRITE_NUM_TANK_A1, 0);
+                tankTurret(tankATurret, SPRITE_NUM_TANK_A2, 0);
+            }
             // Manual move for Tank B
             // moveTank(1, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankBX, &tankBY);
 
@@ -228,6 +240,7 @@ void main() {
 
             // Waiting for VSYNC
             while(!go);
+            ticks++;
         }
     }
 }
