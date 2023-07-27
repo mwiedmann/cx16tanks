@@ -37,7 +37,7 @@ void spritesConfig() {
         VERA.data0 = 100;
         VERA.data0 = 100;
         VERA.data0 = 0; // 0b00001000; // Z-Depth=2 (or 0 to hide)
-        VERA.data0 = 0b01010000; // 16x16 pixel image
+        VERA.data0 = 0b00000000; // 8x8 pixel image
     }
    
     // Create 4 tank sprites

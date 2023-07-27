@@ -118,9 +118,33 @@ void dirToXY(unsigned char dir, short *x, short *y) {
     }
 }
 
+void turretToXY(unsigned char turret, short *x, short *y) {
+    *x = 0;
+    *y = 0;
+
+    switch(turret) {
+        case 0: *y=-4; break;
+        case 1: *y=-3; *x=2; break;
+        case 2: *y=-3; *x=3; break;
+        case 3: *y=-2; *x=3; break;
+        case 4: *x=4; break;
+        case 5: *y=2; *x=3; break;
+        case 6: *y=3; *x=3; break;
+        case 7: *y=3; *x=2; break;
+        case 8: *y=4; break;
+        case 9: *y=3; *x=-2; break;
+        case 10: *y=3; *x=-3; break;
+        case 11: *y=2; *x=-3; break;
+        case 12: *x=-4; break;
+        case 13: *y=-2; *x=-3; break;
+        case 14: *y=-3; *x=-3; break;
+        case 15: *y=-3; *x=-2; break;
+    }
+}
+
 void main() {
     unsigned char l0Tile, joy, aiDir, tankATurret = 0, ticks = 0;
-    short tankAIMoveX, tankAIMoveY;
+    short tankAIMoveX, tankAIMoveY, ballX, ballY;
     Ball balls[2] = {
         {0,0,0,0,0,0,0,0},
         {0,0,0,0,0,0,0,0}
@@ -164,19 +188,26 @@ void main() {
 
             // Shoot ball
             if (!balls[0].active && JOY_BTN_3(joy)) {
+                // Shoot in the direction of the turret
+                turretToXY(tankATurret, &ballX, &ballY);
+
                 balls[0].active = 1;
                 balls[0].ticksRemaining = 180;
-                balls[0].x = tankAX;
-                balls[0].y = tankAY;
-                balls[0].moveX = 3;
-                balls[0].moveY = 3;
+
+                // Middle of tank adjusted for ball size
+                balls[0].x = (tankAX+16)-4;
+                balls[0].y = (tankAY+16)-4;
+
+                balls[0].moveX = ballX;
+                balls[0].moveY = ballY;
                 balls[0].spriteNum = SPRITE_NUM_BALL_A1;
+
                 toggle(SPRITE_NUM_BALL_A1, 1);
                 toggle(SPRITE_NUM_BALL_A2, 1);
             }
 
             if (balls[0].active) {
-                getCollisionTile(balls[0].x+8+balls[0].moveX, balls[0].y+8, &l0Tile);
+                getCollisionTile(balls[0].x+4+balls[0].moveX, balls[0].y+4, &l0Tile);
 
                 if (l0Tile != 0) {
                     balls[0].moveX*= -1;
@@ -185,7 +216,7 @@ void main() {
                 }
                 
                 // Get the tiles on each layer the guy is currently touching
-                getCollisionTile(balls[0].x+8, balls[0].y+8+balls[0].moveY, &l0Tile);
+                getCollisionTile(balls[0].x+4, balls[0].y+4+balls[0].moveY, &l0Tile);
 
                 if (l0Tile != 0) {
                     balls[0].moveY*= -1;
