@@ -56,6 +56,7 @@ void clearLayer0() {
 void clearLayer1() {
     // Note we need a `short` here because there are more than 255 tiles
     unsigned short x,y;
+    unsigned char c=TILESET_FONT_INDEX;
 
     // Clear layer 1
     VERA.address = L1_MAPBASE_ADDR;
@@ -67,8 +68,13 @@ void clearLayer1() {
     for (y=0; y<L1_MAPBASE_TILE_HEIGHT; y++) {
         for (x=0; x<L1_MAPBASE_TILE_WIDTH; x++) {
             if (x>31) {
-                VERA.data0 = 2;
+                VERA.data0 = c;
                 VERA.data0 = 0;
+
+                c++;
+                if (c == TILESET_COUNT) {
+                    c=TILESET_FONT_INDEX;
+                }
             } else {
                 VERA.data0 = y == 14 || y == 15 ? 3 : 0;
                 VERA.data0 = y == 15 ? 0b1000 : 0;

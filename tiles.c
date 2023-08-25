@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "config.h"
+#include "utils.h"
 
 #define SECTION_COUNT 4
 #define SECTION_SIZE 10
@@ -92,6 +93,8 @@ void getCollisionTile(unsigned short x, unsigned short y, unsigned char *l0Tile)
 
 void createTiles() {
     unsigned short i,x,y;
+    
+    loadFileToVRAM("font.bin", TILEBASE_FONT_START);
     
     // Clear layer 0
     VERA.address = TILEBASE_ADDR;

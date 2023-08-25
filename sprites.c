@@ -95,10 +95,17 @@ void move(unsigned char spriteNum, short x, short y, short scrollX, short scroll
     // Set the Increment Mode, turn on bit 4
     VERA.address_hi |= 0b10000;
 
-    VERA.data0 = finalX;
-    VERA.data0 = finalX>>8;
-    VERA.data0 = finalY;
-    VERA.data0 = finalY>>8;
+    if (finalY >= 480 || finalY < 0 || finalX == 640) {
+        VERA.data0 = 640;
+        VERA.data0 = 640>>8;
+        VERA.data0 = 480;
+        VERA.data0 = 480>>8;
+    } else {
+        VERA.data0 = finalX;
+        VERA.data0 = finalX>>8;
+        VERA.data0 = finalY;
+        VERA.data0 = finalY>>8;
+    }
 }
 
 void tankTurret(unsigned char turret, unsigned char spriteNum, unsigned char tankGraphic) {

@@ -192,7 +192,7 @@ void main() {
                 turretToXY(tankATurret, &ballX, &ballY);
 
                 balls[0].active = 1;
-                balls[0].ticksRemaining = 180;
+                balls[0].ticksRemaining = 90;
 
                 // Middle of tank adjusted for ball size
                 balls[0].x = (tankAX+16)-4;
@@ -266,7 +266,7 @@ void main() {
 
             // Tank B "shadow" on top screen
             move(SPRITE_NUM_TANK_B1, tankBX, tankBY, scrollX1, scrollY1, 0);
-            // Tank A "shadow" on 2nd screen
+            // Tank B on bottom screen
             move(SPRITE_NUM_TANK_B2, tankBX, tankBY+240, scrollX2, scrollY2, 1);
 
             // Waiting for VSYNC
