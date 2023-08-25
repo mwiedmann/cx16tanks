@@ -43,8 +43,8 @@ void spritesConfig() {
     // Create 4 tank sprites
     for (i=0; i<4; i++) {
         // Point to Sprite 2
-        VERA.address = SPRITE1_ADDR+(SPRITE_NUM_TANK_A1*8)+(i*8);
-        VERA.address_hi = SPRITE1_ADDR+(SPRITE_NUM_TANK_A1*8)+(i*8)>>16;
+        VERA.address = SPRITE1_ADDR+(SPRITE_NUM_TANK_A*8)+(i*8);
+        VERA.address_hi = SPRITE1_ADDR+(SPRITE_NUM_TANK_A*8)+(i*8)>>16;
         // Set the Increment Mode, turn on bit 4
         VERA.address_hi |= 0b10000;
 

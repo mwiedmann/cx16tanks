@@ -8,10 +8,8 @@
 #define SPRITE_NUM_BALL_B1 SPRITE_NUM_BALL_A2+1
 #define SPRITE_NUM_BALL_B2 SPRITE_NUM_BALL_B1+1
 
-#define SPRITE_NUM_TANK_A1 16
-#define SPRITE_NUM_TANK_A2 SPRITE_NUM_TANK_A1+1
-#define SPRITE_NUM_TANK_B1 SPRITE_NUM_TANK_A2+1
-#define SPRITE_NUM_TANK_B2 SPRITE_NUM_TANK_B1+1
+#define SPRITE_NUM_TANK_A 16
+#define SPRITE_NUM_TANK_B SPRITE_NUM_TANK_A+2
 
 typedef struct Ball {
     unsigned char spriteNum;
@@ -23,6 +21,18 @@ typedef struct Ball {
     short moveY;
     unsigned short ticksRemaining;
 } Ball;
+
+typedef struct Tank {
+    unsigned char spriteNum;
+    unsigned char side;
+    unsigned char isAI;
+    short x;
+    short y;
+    short moveX;
+    short moveY;
+    unsigned char speed;
+    unsigned char turret;
+} Tank;
 
 void loadSpriteGraphics();
 void spritesConfig();

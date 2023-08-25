@@ -18,7 +18,6 @@ unsigned char irqHandlerStack[IRQ_HANDLER_STACK_SIZE];
 // Global because these are accessed in the irq handler
 short scrollY1 = 0, scrollX1 = 0, scrollY2 = 0, scrollX2 = 0;
 unsigned char go, irqLineMode;
-short tankAX, tankAY, tankBX, tankBY;
 
 #define SCROLL_X_MIN 224
 #define SCROLL_X_MAX 256
@@ -27,6 +26,13 @@ short tankAX, tankAY, tankBX, tankBY;
 #define SCROLL_X_OVERALL_MAX ((MAPBASE_TILE_WIDTH+8) * 16)-640 // +8 for the UI overlay on the right
 #define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
 
+#define TANKS_COUNT 2
+
+Tank tanks[TANKS_COUNT] = {
+    { SPRITE_NUM_TANK_A, 0, 0, 32*10, 32*2, 1, 1, 2 },
+    { SPRITE_NUM_TANK_B, 1, 1, 32*10, 32*7, 1, 1, 1 }
+};
+
 unsigned char irqHandler() {
     if (VERA.irq_flags & 0b10) {
        if (irqLineMode == 0) {
@@ -34,16 +40,16 @@ unsigned char irqHandler() {
             VERA.irq_enable = 0b00000011; 
             irqLineMode = 1;
 
-            if (tankAX - scrollX1 < SCROLL_X_MIN) {
-                scrollX1 = tankAX - SCROLL_X_MIN;
-            } else if (tankAX - scrollX1 > SCROLL_X_MAX) {
-                scrollX1 = tankAX - SCROLL_X_MAX;
+            if (tanks[0].x - scrollX1 < SCROLL_X_MIN) {
+                scrollX1 = tanks[0].x - SCROLL_X_MIN;
+            } else if (tanks[0].x - scrollX1 > SCROLL_X_MAX) {
+                scrollX1 = tanks[0].x - SCROLL_X_MAX;
             }
 
-            if (tankAY - scrollY1 < SCROLL_Y_MIN) {
-                scrollY1 = tankAY - SCROLL_Y_MIN;
-            } else if (tankAY - scrollY1 > SCROLL_Y_MAX) {
-                scrollY1 = tankAY - SCROLL_Y_MAX;
+            if (tanks[0].y - scrollY1 < SCROLL_Y_MIN) {
+                scrollY1 = tanks[0].y - SCROLL_Y_MIN;
+            } else if (tanks[0].y - scrollY1 > SCROLL_Y_MAX) {
+                scrollY1 = tanks[0].y - SCROLL_Y_MAX;
             }
 
             if (scrollX1 < 0) {
@@ -65,16 +71,16 @@ unsigned char irqHandler() {
             VERA.irq_enable = 0b00000011; 
             irqLineMode = 0;
 
-            if (tankBX - scrollX2 < SCROLL_X_MIN) {
-                scrollX2 = tankBX - SCROLL_X_MIN;
-            } else if (tankBX - scrollX2 > SCROLL_X_MAX) {
-                scrollX2 = tankBX - SCROLL_X_MAX;
+            if (tanks[1].x - scrollX2 < SCROLL_X_MIN) {
+                scrollX2 = tanks[1].x - SCROLL_X_MIN;
+            } else if (tanks[1].x - scrollX2 > SCROLL_X_MAX) {
+                scrollX2 = tanks[1].x - SCROLL_X_MAX;
             }
 
-            if (tankBY - scrollY2 < SCROLL_Y_MIN) {
-                scrollY2 = tankBY - SCROLL_Y_MIN;
-            } else if (tankBY - scrollY2 > SCROLL_Y_MAX) {
-                scrollY2 = tankBY - SCROLL_Y_MAX;
+            if (tanks[1].y - scrollY2 < SCROLL_Y_MIN) {
+                scrollY2 = tanks[1].y - SCROLL_Y_MIN;
+            } else if (tanks[1].y - scrollY2 > SCROLL_Y_MAX) {
+                scrollY2 = tanks[1].y - SCROLL_Y_MAX;
             }
 
             if (scrollX2 < 0) {
@@ -143,8 +149,8 @@ void turretToXY(unsigned char turret, short *x, short *y) {
 }
 
 void main() {
-    unsigned char l0Tile, joy, aiDir, tankATurret = 0, ticks = 0;
-    short tankAIMoveX, tankAIMoveY, ballX, ballY;
+    unsigned char l0Tile, joy, aiDir, ticks = 0, i;
+    short ballX, ballY;
     Ball balls[2] = {
         {0,0,0,0,0,0,0,0},
         {0,0,0,0,0,0,0,0}
@@ -169,18 +175,10 @@ void main() {
         clearLayers();
         drawMaze();
 
-        tankAX = 32*10;
-        tankAY = 32*2;
-        tankBX = 32*10;
-        tankBY = 32*7;
-
-        aiDir = 0;
-        dirToXY(aiDir, &tankAIMoveX, &tankAIMoveY);
-
-        toggle(SPRITE_NUM_TANK_A1, 1);
-        toggle(SPRITE_NUM_TANK_A2, 1);
-        toggle(SPRITE_NUM_TANK_B1, 1);
-        toggle(SPRITE_NUM_TANK_B2, 1);
+        toggle(SPRITE_NUM_TANK_A, 1);
+        toggle(SPRITE_NUM_TANK_A+1, 1);
+        toggle(SPRITE_NUM_TANK_B, 1);
+        toggle(SPRITE_NUM_TANK_B+1, 1);
         
         while(1) {
             go = 0;
@@ -189,14 +187,14 @@ void main() {
             // Shoot ball
             if (!balls[0].active && JOY_BTN_3(joy)) {
                 // Shoot in the direction of the turret
-                turretToXY(tankATurret, &ballX, &ballY);
+                turretToXY(tanks[0].turret, &ballX, &ballY);
 
                 balls[0].active = 1;
                 balls[0].ticksRemaining = 90;
 
                 // Middle of tank adjusted for ball size
-                balls[0].x = (tankAX+16)-4;
-                balls[0].y = (tankAY+16)-4;
+                balls[0].x = (tanks[0].x+16)-4;
+                balls[0].y = (tanks[0].y+16)-4;
 
                 balls[0].moveX = ballX;
                 balls[0].moveY = ballY;
@@ -215,7 +213,6 @@ void main() {
                     balls[0].x+= balls[0].moveX;
                 }
                 
-                // Get the tiles on each layer the guy is currently touching
                 getCollisionTile(balls[0].x+4, balls[0].y+4+balls[0].moveY, &l0Tile);
 
                 if (l0Tile != 0) {
@@ -226,7 +223,7 @@ void main() {
 
                 move(SPRITE_NUM_BALL_A1, balls[0].x, balls[0].y, scrollX1, scrollY1, 0);
                 move(SPRITE_NUM_BALL_A2, balls[0].x, balls[0].y+240, scrollX2, scrollY2, 1);
-
+                
                 balls[0].ticksRemaining--;
                 if (balls[0].ticksRemaining == 0) {
                     balls[0].active = 0;
@@ -234,40 +231,39 @@ void main() {
                     toggle(SPRITE_NUM_BALL_A2, 0);
                 }
             }
-
-            moveTank(2, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankAX, &tankAY);
             
-            if (ticks % 8 == 0 && (JOY_BTN_1(joy) || JOY_BTN_2(joy))) {
-                // while(1);
-                tankATurret+= JOY_BTN_1(joy) ? 1 : -1;
-                if (tankATurret == 255) {
-                    tankATurret = 15;
-                } else if (tankATurret == 16) {
-                    tankATurret = 0;
+            for (i=0; i<TANKS_COUNT; i++) {
+                if (!tanks[i].isAI) {
+                    moveTank(tanks[i].speed, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tanks[i].x, &tanks[i].y);
+                    
+                    if (ticks % 8 == 0 && (JOY_BTN_1(joy) || JOY_BTN_2(joy))) {
+                        // while(1);
+                        tanks[i].turret+= JOY_BTN_1(joy) ? 1 : -1;
+                        if (tanks[i].turret == 255) {
+                            tanks[i].turret = 15;
+                        } else if (tanks[i].turret == 16) {
+                            tanks[i].turret = 0;
+                        }
+
+                        tankTurret(tanks[i].turret, SPRITE_NUM_TANK_A, 0);
+                        tankTurret(tanks[i].turret, SPRITE_NUM_TANK_A+1, 0);
+                    }
+                } else {
+                    // AI for Tank
+                    while (!moveTank(tanks[i].speed, tanks[i].moveX == -1, tanks[i].moveX == 1, tanks[i].moveY == -1, tanks[i].moveY == 1, &tanks[i].x, &tanks[i].y)) {
+                        aiDir = rand();
+                        aiDir>>=5;
+                        dirToXY(aiDir, &tanks[i].moveX, &tanks[i].moveY);
+                    }
                 }
 
-                tankTurret(tankATurret, SPRITE_NUM_TANK_A1, 0);
-                tankTurret(tankATurret, SPRITE_NUM_TANK_A2, 0);
-            }
-            // Manual move for Tank B
-            // moveTank(1, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tankBX, &tankBY);
-
-            // AI For Tank B
-            while (!moveTank(1, tankAIMoveX == -1, tankAIMoveX == 1, tankAIMoveY == -1, tankAIMoveX == 1, &tankBX, &tankBY)) {
-                aiDir = rand();
-                aiDir>>=5;
-                dirToXY(aiDir, &tankAIMoveX, &tankAIMoveY);
+                // Tank on top screen
+                move(tanks[i].spriteNum, tanks[i].x, tanks[i].y, scrollX1, scrollY1, 0);
+                // Tank "shadow" on 2nd screen
+                move(tanks[i].spriteNum+1, tanks[i].x, tanks[i].y+240, scrollX2, scrollY2, 1);
             }
 
-            // Tank A on top screen
-            move(SPRITE_NUM_TANK_A1, tankAX, tankAY, scrollX1, scrollY1, 0);
-            // Tank A "shadow" on 2nd screen
-            move(SPRITE_NUM_TANK_A2, tankAX, tankAY+240, scrollX2, scrollY2, 1);
-
-            // Tank B "shadow" on top screen
-            move(SPRITE_NUM_TANK_B1, tankBX, tankBY, scrollX1, scrollY1, 0);
-            // Tank B on bottom screen
-            move(SPRITE_NUM_TANK_B2, tankBX, tankBY+240, scrollX2, scrollY2, 1);
+            
 
             // Waiting for VSYNC
             while(!go);
