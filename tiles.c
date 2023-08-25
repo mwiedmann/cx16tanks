@@ -124,12 +124,21 @@ void createTiles() {
         }
     }
 
-    // Ball tile
+    // Ball tile 1
     for (i=0; i<256; i++) {
         if (i % 16 == 0 || i % 16 == 1 || i < 16 || i > 256-16) {
             VERA.data0 = 0;
         } else {
             VERA.data0 = 4;
+        }
+    }
+
+    // Ball tile 2
+    for (i=0; i<256; i++) {
+        if (i % 16 == 0 || i % 16 == 1 || i < 16 || i > 256-16) {
+            VERA.data0 = 0;
+        } else {
+            VERA.data0 = 7;
         }
     }
 }

@@ -17,16 +17,16 @@ void loadSpriteGraphics() {
 
 void spritesConfig() {
     unsigned char i;
-
-    // VRAM address for sprite 1 graphics...reusing a tile for now
-    unsigned long spriteGraphicAddress = TILEBASE_ADDR + (4 * 256);
+    unsigned long spriteGraphicAddress;
 
     // Create 4 ball sprites
     for (i=0; i<4; i++) {
-        VERA.address = SPRITE1_ADDR+(SPRITE_NUM_BALL_A1*8)+(i*8);
-        VERA.address_hi = SPRITE1_ADDR+(SPRITE_NUM_BALL_A1*8)+(i*8)>>16;
+        VERA.address = SPRITE1_ADDR+(SPRITE_NUM_BALL_A*8)+(i*8);
+        VERA.address_hi = SPRITE1_ADDR+(SPRITE_NUM_BALL_A*8)+(i*8)>>16;
         // Set the Increment Mode, turn on bit 4
         VERA.address_hi |= 0b10000;
+
+        spriteGraphicAddress = i<2 ? BALL_A_SPRITE_GRAPHICS_ADDR : BALL_B_SPRITE_GRAPHICS_ADDR;
 
         // Graphic address bits 12:5
         VERA.data0 = spriteGraphicAddress>>5;

@@ -27,10 +27,11 @@ unsigned char go, irqLineMode;
 #define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
 
 #define TANKS_COUNT 2
+#define BALLS_COUNT 2
 
 Tank tanks[TANKS_COUNT] = {
-    { SPRITE_NUM_TANK_A, 0, 0, 32*10, 32*2, 1, 1, 2 },
-    { SPRITE_NUM_TANK_B, 1, 1, 32*10, 32*7, 1, 1, 1 }
+    { SPRITE_NUM_TANK_A, 0, 0, 32*10, 32*2, 1, 1, 2, 0 },
+    { SPRITE_NUM_TANK_B, 1, 1, 32*10, 32*7, 1, 1, 1, 2 }
 };
 
 unsigned char irqHandler() {
@@ -149,11 +150,11 @@ void turretToXY(unsigned char turret, short *x, short *y) {
 }
 
 void main() {
-    unsigned char l0Tile, joy, aiDir, ticks = 0, i;
+    unsigned char l0Tile, joy, aiDir, ticks = 0, i, firePressed;
     short ballX, ballY;
-    Ball balls[2] = {
-        {0,0,0,0,0,0,0,0},
-        {0,0,0,0,0,0,0,0}
+    Ball balls[BALLS_COUNT] = {
+        {SPRITE_NUM_BALL_A, 0,0,0,0,0,0,0},
+        {SPRITE_NUM_BALL_B, 1,0,0,0,0,0,0}
     };
 
     init();
@@ -185,69 +186,61 @@ void main() {
             joy = joy_read(0);
 
             // Shoot ball
-            if (!balls[0].active && JOY_BTN_3(joy)) {
-                // Shoot in the direction of the turret
-                turretToXY(tanks[0].turret, &ballX, &ballY);
+            for (i=0; i<TANKS_COUNT; i++) {
+                firePressed = i==0 ? JOY_BTN_3(joy) : 1;
 
-                balls[0].active = 1;
-                balls[0].ticksRemaining = 90;
+                if (!balls[i].active && firePressed) {
+                    // Shoot in the direction of the turret
+                    turretToXY(tanks[i].turret, &ballX, &ballY);
 
-                // Middle of tank adjusted for ball size
-                balls[0].x = (tanks[0].x+16)-4;
-                balls[0].y = (tanks[0].y+16)-4;
+                    balls[i].active = 1;
+                    balls[i].ticksRemaining = 90;
 
-                balls[0].moveX = ballX;
-                balls[0].moveY = ballY;
-                balls[0].spriteNum = SPRITE_NUM_BALL_A1;
+                    // Middle of tank adjusted for ball size
+                    balls[i].x = (tanks[i].x+16)-4;
+                    balls[i].y = (tanks[i].y+16)-4;
 
-                toggle(SPRITE_NUM_BALL_A1, 1);
-                toggle(SPRITE_NUM_BALL_A2, 1);
-            }
+                    balls[i].moveX = ballX;
+                    balls[i].moveY = ballY;
+                    // balls[i].spriteNum = SPRITE_NUM_BALL_A;
 
-            if (balls[0].active) {
-                getCollisionTile(balls[0].x+4+balls[0].moveX, balls[0].y+4, &l0Tile);
-
-                if (l0Tile != 0) {
-                    balls[0].moveX*= -1;
-                } else {
-                    balls[0].x+= balls[0].moveX;
-                }
-                
-                getCollisionTile(balls[0].x+4, balls[0].y+4+balls[0].moveY, &l0Tile);
-
-                if (l0Tile != 0) {
-                    balls[0].moveY*= -1;
-                } else {
-                    balls[0].y+= balls[0].moveY;
-                }
-
-                move(SPRITE_NUM_BALL_A1, balls[0].x, balls[0].y, scrollX1, scrollY1, 0);
-                move(SPRITE_NUM_BALL_A2, balls[0].x, balls[0].y+240, scrollX2, scrollY2, 1);
-                
-                balls[0].ticksRemaining--;
-                if (balls[0].ticksRemaining == 0) {
-                    balls[0].active = 0;
-                    toggle(SPRITE_NUM_BALL_A1, 0);
-                    toggle(SPRITE_NUM_BALL_A2, 0);
+                    toggle(SPRITE_NUM_BALL_A+(i*2), 1);
+                    toggle(SPRITE_NUM_BALL_A+(i*2)+1, 1);
                 }
             }
-            
+            for (i=0; i<BALLS_COUNT; i++) {
+                if (balls[i].active) {
+                    getCollisionTile(balls[i].x+4+balls[i].moveX, balls[i].y+4, &l0Tile);
+
+                    if (l0Tile != 0) {
+                        balls[i].moveX*= -1;
+                    } else {
+                        balls[i].x+= balls[i].moveX;
+                    }
+                    
+                    getCollisionTile(balls[i].x+4, balls[i].y+4+balls[i].moveY, &l0Tile);
+
+                    if (l0Tile != 0) {
+                        balls[i].moveY*= -1;
+                    } else {
+                        balls[i].y+= balls[i].moveY;
+                    }
+
+                    move(balls[i].spriteNum, balls[i].x, balls[i].y, scrollX1, scrollY1, 0);
+                    move(balls[i].spriteNum+1, balls[i].x, balls[i].y+240, scrollX2, scrollY2, 1);
+                    
+                    balls[i].ticksRemaining--;
+                    if (balls[i].ticksRemaining == 0) {
+                        balls[i].active = 0;
+                        toggle(balls[i].spriteNum, 0);
+                        toggle(balls[i].spriteNum+1, 0);
+                    }
+                }
+            }
+
             for (i=0; i<TANKS_COUNT; i++) {
                 if (!tanks[i].isAI) {
                     moveTank(tanks[i].speed, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tanks[i].x, &tanks[i].y);
-                    
-                    if (ticks % 8 == 0 && (JOY_BTN_1(joy) || JOY_BTN_2(joy))) {
-                        // while(1);
-                        tanks[i].turret+= JOY_BTN_1(joy) ? 1 : -1;
-                        if (tanks[i].turret == 255) {
-                            tanks[i].turret = 15;
-                        } else if (tanks[i].turret == 16) {
-                            tanks[i].turret = 0;
-                        }
-
-                        tankTurret(tanks[i].turret, SPRITE_NUM_TANK_A, 0);
-                        tankTurret(tanks[i].turret, SPRITE_NUM_TANK_A+1, 0);
-                    }
                 } else {
                     // AI for Tank
                     while (!moveTank(tanks[i].speed, tanks[i].moveX == -1, tanks[i].moveX == 1, tanks[i].moveY == -1, tanks[i].moveY == 1, &tanks[i].x, &tanks[i].y)) {
@@ -255,6 +248,23 @@ void main() {
                         aiDir>>=5;
                         dirToXY(aiDir, &tanks[i].moveX, &tanks[i].moveY);
                     }
+                }
+
+                // Rotate the turret
+                if (ticks % 8 == 0 && (
+                        (JOY_BTN_1(joy) || JOY_BTN_2(joy))
+                        || tanks[i].isAI
+                    )
+                ) {
+                    tanks[i].turret+= JOY_BTN_1(joy) ? 1 : -1;
+                    if (tanks[i].turret == 255) {
+                        tanks[i].turret = 15;
+                    } else if (tanks[i].turret == 16) {
+                        tanks[i].turret = 0;
+                    }
+
+                    tankTurret(tanks[i].turret, tanks[i].spriteNum, tanks[i].side);
+                    tankTurret(tanks[i].turret, tanks[i].spriteNum+1, tanks[i].side);
                 }
 
                 // Tank on top screen
