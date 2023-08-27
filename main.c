@@ -29,16 +29,43 @@ unsigned char go, irqLineMode;
 #define TANKS_COUNT 2
 #define BALLS_COUNT 2
 
+#define TANK_A_START_X 32*10
+#define TANK_A_START_Y 32*2
+#define TANK_B_START_X 32*10
+#define TANK_B_START_Y 32*7
+
+#define IRQ_ENABLE 0b00000111
+
 Tank tanks[TANKS_COUNT] = {
-    { SPRITE_NUM_TANK_A, 0, 0, 32*10, 32*2, 1, 1, 2, 0 },
-    { SPRITE_NUM_TANK_B, 1, 1, 32*10, 32*7, 1, 1, 1, 2 }
+    { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0 },
+    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2 }
 };
 
 unsigned char irqHandler() {
-    if (VERA.irq_flags & 0b10) {
+    // Check for collisions
+    if (VERA.irq_flags & 0b100) {
+        if (VERA.irq_flags & 0b00010000) {
+            tanks[0].x = TANK_A_START_X;
+            tanks[0].y = TANK_A_START_Y;
+            move(tanks[0].spriteNum, tanks[0].x, tanks[0].y, scrollX1, scrollY1, 0);
+            move(tanks[0].spriteNum+1, tanks[0].x, tanks[0].y+240, scrollX2, scrollY2, 1);
+            toggle(SPRITE_NUM_BALL_B, 0);
+            toggle(SPRITE_NUM_BALL_B+1, 0);
+        } else {
+            tanks[1].x = TANK_B_START_X;
+            tanks[1].y = TANK_B_START_Y;
+            move(tanks[1].spriteNum, tanks[1].x, tanks[1].y, scrollX1, scrollY1, 0);
+            move(tanks[1].spriteNum+1, tanks[1].x, tanks[1].y+240, scrollX2, scrollY2, 1);
+            toggle(SPRITE_NUM_BALL_A, 0);
+            toggle(SPRITE_NUM_BALL_A+1, 0);
+        }
+
+        VERA.irq_flags = 0b100;
+        return IRQ_HANDLED;
+    } else if (VERA.irq_flags & 0b10) {
        if (irqLineMode == 0) {
             VERA.irq_raster = 240;
-            VERA.irq_enable = 0b00000011; 
+            VERA.irq_enable = IRQ_ENABLE; 
             irqLineMode = 1;
 
             if (tanks[0].x - scrollX1 < SCROLL_X_MIN) {
@@ -69,7 +96,7 @@ unsigned char irqHandler() {
             VERA.layer0.vscroll = scrollY1;
         } else {
             VERA.irq_raster = 0;
-            VERA.irq_enable = 0b00000011; 
+            VERA.irq_enable = IRQ_ENABLE; 
             irqLineMode = 0;
 
             if (tanks[1].x - scrollX2 < SCROLL_X_MIN) {
@@ -169,8 +196,8 @@ void main() {
 
     irqLineMode = 0;
     VERA.irq_raster = 0;
-    VERA.irq_enable = 0b00000011;
-
+    VERA.irq_enable = IRQ_ENABLE;
+    
     while(1) {
         // Set the zoom level
         clearLayers();
@@ -208,6 +235,7 @@ void main() {
                     toggle(SPRITE_NUM_BALL_A+(i*2)+1, 1);
                 }
             }
+            
             for (i=0; i<BALLS_COUNT; i++) {
                 if (balls[i].active) {
                     getCollisionTile(balls[i].x+4+balls[i].moveX, balls[i].y+4, &l0Tile);

@@ -36,7 +36,7 @@ void spritesConfig() {
         VERA.data0 = 100;
         VERA.data0 = 100;
         VERA.data0 = 100;
-        VERA.data0 = 0; // 0b00001000; // Z-Depth=2 (or 0 to hide)
+        VERA.data0 = i<2 ? 0b00100000 : 0b00010000;
         VERA.data0 = 0b00000000; // 8x8 pixel image
     }
    
@@ -59,7 +59,7 @@ void spritesConfig() {
         VERA.data0 = 100;
         VERA.data0 = 100;
         VERA.data0 = 100;
-        VERA.data0 = 0; // 0b00001000; // Z-Depth=2 (or 0 to hide)
+        VERA.data0 = i<2 ? 0b00010000 : 0b00100000;
         VERA.data0 = 0b10100000; // 32x32 pixel image
     }
 }
@@ -70,7 +70,7 @@ void toggle(unsigned char spriteNum, unsigned char show) {
     VERA.address = SPRITE1_ADDR+(spriteNum*8)+6;
     VERA.address_hi = (SPRITE1_ADDR+(spriteNum*8))>>16;
 
-    VERA.data0 = show ? 0b00001000 : 0; // Z-Depth=2 (or 0 to hide)
+    VERA.data0 = show ? VERA.data0 | 0b1000 : VERA.data0 & 0b11110111; // Z-Depth=2 (or 0 to hide)
 }
 
 void move(unsigned char spriteNum, short x, short y, short scrollX, short scrollY, unsigned char zone) {
@@ -112,7 +112,7 @@ void tankTurret(unsigned char turret, unsigned char spriteNum, unsigned char tan
     unsigned long spriteGraphicAddress;
     unsigned long spriteAddr = SPRITE1_ADDR+(spriteNum*8);
     unsigned long graphicsAdjust = TANK_FRAME_SIZE*turret;
-    unsigned short vFlip = 0, hFlip = 0;
+    unsigned char vFlip = 0, hFlip = 0;
 
     spriteGraphicAddress = tankGraphic == 0 ? TANK_A_SPRITE_GRAPHICS_ADDR : TANK_B_SPRITE_GRAPHICS_ADDR;
 
@@ -144,10 +144,9 @@ void tankTurret(unsigned char turret, unsigned char spriteNum, unsigned char tan
 
     VERA.address = spriteAddr+6;
     VERA.address_hi = spriteAddr+6>>16;
-    // Set the Increment Mode, turn on bit 4
-    VERA.address_hi |= 0b10000;
 
-    VERA.data0 = 0b1000 | vFlip<<1 | hFlip;
+    VERA.data0 = VERA.data0 & 0b11111100; // Clear flip bits
+    VERA.data0 = VERA.data0 | vFlip<<1 | hFlip;
 }
 
 unsigned char moveTank(unsigned char speed, unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y) {
