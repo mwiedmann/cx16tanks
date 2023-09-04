@@ -2,7 +2,6 @@ const fs = require("fs");
 
 const filebase = process.argv[2];
 const imageName = `${filebase}.data`
-const imageOutputFilename = `${filebase.toUpperCase()}.BIN`
 
 console.log(
   `imageName: ${imageName}`
@@ -12,6 +11,8 @@ const imageData = fs.readFileSync(imageName);
 
 const tanka = [];
 const tankb = [];
+const tankc = [];
+
 let i;
 
 for (i = 0; i<imageData.length; i+=3) {
@@ -23,12 +24,15 @@ for (i = 0; i<imageData.length; i+=3) {
   }
   tanka.push(b);
   tankb.push(b == 0 ? 0 : b + 5);
+  tankc.push(b == 0 ? 0 : b - 1);
 }
 
-output = new Uint8Array(tanka);
-fs.writeFileSync("TANKA.BIN", output, "binary");
+const createFile = (bytes, filename) => {
+  let output = new Uint8Array(bytes);
+  fs.writeFileSync(filename, output, "binary");
+  console.log(`Generated file ${filename}`);
+}
 
-output = new Uint8Array(tankb);
-fs.writeFileSync("TANKB.BIN", output, "binary");
-
-console.log(`Generated file ${imageOutputFilename}`);
+createFile(tanka, "TANKA.BIN")
+createFile(tankb, "TANKB.BIN")
+createFile(tankc, "TANKC.BIN")

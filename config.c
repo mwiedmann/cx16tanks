@@ -19,7 +19,7 @@ void init() {
     // Only 640/16 = 40, 480/16=30 (40x30 tile resolution now)
     // Set the Map Height=0 (32), Width=1 (64) // NOW 256x64
     // Set Color Depth to 8 bpp mode
-    VERA.layer0.config = 0b10100011;
+    VERA.layer0.config = 0b01010011; // 64x64 for layer 0
     VERA.layer1.config = 0b00010011; // 64x32 for layer 1
 
     // Get bytes 16-9 of the MapBase addresses and set on both layers

@@ -26,19 +26,22 @@ unsigned char go, irqLineMode;
 #define SCROLL_X_OVERALL_MAX ((MAPBASE_TILE_WIDTH+8) * 16)-640 // +8 for the UI overlay on the right
 #define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
 
-#define TANKS_COUNT 2
-#define BALLS_COUNT 2
+#define TANKS_COUNT 3
+#define BALLS_COUNT 3
 
 #define TANK_A_START_X 32*10
 #define TANK_A_START_Y 32*2
 #define TANK_B_START_X 32*10
 #define TANK_B_START_Y 32*7
+#define TANK_C_START_X 32*17
+#define TANK_C_START_Y 32*5
 
 #define IRQ_ENABLE 0b00000111
 
 Tank tanks[TANKS_COUNT] = {
     { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0 },
-    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2 }
+    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2 },
+    { SPRITE_NUM_TANK_C, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, 1, 1, 5 }
 };
 
 unsigned char irqHandler() {
@@ -51,13 +54,15 @@ unsigned char irqHandler() {
             move(tanks[0].spriteNum+1, tanks[0].x, tanks[0].y+240, scrollX2, scrollY2, 1);
             toggle(SPRITE_NUM_BALL_B, 0);
             toggle(SPRITE_NUM_BALL_B+1, 0);
-        } else {
+        } else if (VERA.irq_flags & 0b00100000) {
             tanks[1].x = TANK_B_START_X;
             tanks[1].y = TANK_B_START_Y;
             move(tanks[1].spriteNum, tanks[1].x, tanks[1].y, scrollX1, scrollY1, 0);
             move(tanks[1].spriteNum+1, tanks[1].x, tanks[1].y+240, scrollX2, scrollY2, 1);
             toggle(SPRITE_NUM_BALL_A, 0);
             toggle(SPRITE_NUM_BALL_A+1, 0);
+        } else {
+            // neutral tank
         }
 
         VERA.irq_flags = 0b100;
@@ -181,7 +186,8 @@ void main() {
     short ballX, ballY;
     Ball balls[BALLS_COUNT] = {
         {SPRITE_NUM_BALL_A, 0,0,0,0,0,0,0},
-        {SPRITE_NUM_BALL_B, 1,0,0,0,0,0,0}
+        {SPRITE_NUM_BALL_B, 1,0,0,0,0,0,0},
+        {SPRITE_NUM_BALL_C, 2,0,0,0,0,0,0}
     };
 
     init();
@@ -207,13 +213,15 @@ void main() {
         toggle(SPRITE_NUM_TANK_A+1, 1);
         toggle(SPRITE_NUM_TANK_B, 1);
         toggle(SPRITE_NUM_TANK_B+1, 1);
+        toggle(SPRITE_NUM_TANK_C, 1);
+        toggle(SPRITE_NUM_TANK_C+1, 1);
         
         while(1) {
             go = 0;
             joy = joy_read(0);
 
-            // Shoot ball
-            for (i=0; i<TANKS_COUNT; i++) {
+            // Shoot ball (just for tanks 1 and 2 for now)
+            for (i=0; i<TANKS_COUNT-1; i++) {
                 firePressed = i==0 ? JOY_BTN_3(joy) : 1;
 
                 if (!balls[i].active && firePressed) {

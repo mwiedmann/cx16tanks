@@ -13,14 +13,15 @@
 void loadSpriteGraphics() {
     loadFileToVRAM("tanka.bin", TANK_A_SPRITE_GRAPHICS_ADDR);
     loadFileToVRAM("tankb.bin", TANK_B_SPRITE_GRAPHICS_ADDR);
+    loadFileToVRAM("tankc.bin", TANK_C_SPRITE_GRAPHICS_ADDR);
 }
 
 void spritesConfig() {
     unsigned char i;
     unsigned long spriteGraphicAddress;
 
-    // Create 4 ball sprites
-    for (i=0; i<4; i++) {
+    // Create 6 ball sprites
+    for (i=0; i<6; i++) {
         VERA.address = SPRITE1_ADDR+(SPRITE_NUM_BALL_A*8)+(i*8);
         VERA.address_hi = SPRITE1_ADDR+(SPRITE_NUM_BALL_A*8)+(i*8)>>16;
         // Set the Increment Mode, turn on bit 4
@@ -36,12 +37,12 @@ void spritesConfig() {
         VERA.data0 = 100;
         VERA.data0 = 100;
         VERA.data0 = 100;
-        VERA.data0 = i<2 ? 0b00100000 : 0b00010000;
+        VERA.data0 = i<2 ? 0b01100000 : i<4 ? 0b01010000 : 0b00000000;
         VERA.data0 = 0b00000000; // 8x8 pixel image
     }
    
-    // Create 4 tank sprites
-    for (i=0; i<4; i++) {
+    // Create 6 tank sprites
+    for (i=0; i<6; i++) {
         // Point to Sprite 2
         VERA.address = SPRITE1_ADDR+(SPRITE_NUM_TANK_A*8)+(i*8);
         VERA.address_hi = SPRITE1_ADDR+(SPRITE_NUM_TANK_A*8)+(i*8)>>16;
@@ -49,7 +50,7 @@ void spritesConfig() {
         VERA.address_hi |= 0b10000;
 
         // Configure Sprite 2 (Tank)
-        spriteGraphicAddress = i<2 ? TANK_A_SPRITE_GRAPHICS_ADDR : TANK_B_SPRITE_GRAPHICS_ADDR;
+        spriteGraphicAddress = i<2 ? TANK_A_SPRITE_GRAPHICS_ADDR : i<4 ? TANK_B_SPRITE_GRAPHICS_ADDR : TANK_C_SPRITE_GRAPHICS_ADDR;
 
         // Graphic address bits 12:5
         VERA.data0 = spriteGraphicAddress>>5;
@@ -59,7 +60,7 @@ void spritesConfig() {
         VERA.data0 = 100;
         VERA.data0 = 100;
         VERA.data0 = 100;
-        VERA.data0 = i<2 ? 0b00010000 : 0b00100000;
+        VERA.data0 = i<2 ? 0b00010000 : i<4 ? 0b00100000 : 0b00000000;
         VERA.data0 = 0b10100000; // 32x32 pixel image
     }
 }
@@ -114,7 +115,11 @@ void tankTurret(unsigned char turret, unsigned char spriteNum, unsigned char tan
     unsigned long graphicsAdjust = TANK_FRAME_SIZE*turret;
     unsigned char vFlip = 0, hFlip = 0;
 
-    spriteGraphicAddress = tankGraphic == 0 ? TANK_A_SPRITE_GRAPHICS_ADDR : TANK_B_SPRITE_GRAPHICS_ADDR;
+    spriteGraphicAddress = tankGraphic == 0
+        ? TANK_A_SPRITE_GRAPHICS_ADDR
+        : tankGraphic == 1
+            ? TANK_B_SPRITE_GRAPHICS_ADDR
+            : TANK_C_SPRITE_GRAPHICS_ADDR;
 
     switch (turret) {
         case 5: graphicsAdjust = TANK_FRAME_SIZE*3; vFlip = 1; break;

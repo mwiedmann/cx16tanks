@@ -5,9 +5,11 @@
 
 #define SPRITE_NUM_BALL_A 0
 #define SPRITE_NUM_BALL_B SPRITE_NUM_BALL_A+2
+#define SPRITE_NUM_BALL_C SPRITE_NUM_BALL_B+2
 
 #define SPRITE_NUM_TANK_A 16
 #define SPRITE_NUM_TANK_B SPRITE_NUM_TANK_A+2
+#define SPRITE_NUM_TANK_C SPRITE_NUM_TANK_B+2
 
 typedef struct Ball {
     unsigned char spriteNum;

@@ -6,7 +6,7 @@
 
 #define SECTION_COUNT 4
 #define SECTION_SIZE 10
-#define MAZE_SECTIONS 12
+#define MAZE_SECTIONS 6
 
 unsigned char starter[] = {
 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
@@ -139,6 +139,15 @@ void createTiles() {
             VERA.data0 = 0;
         } else {
             VERA.data0 = 7;
+        }
+    }
+
+    // Ball tile 3
+    for (i=0; i<256; i++) {
+        if (i % 16 == 0 || i % 16 == 1 || i < 16 || i > 256-16) {
+            VERA.data0 = 0;
+        } else {
+            VERA.data0 = 11;
         }
     }
 }
