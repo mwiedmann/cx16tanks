@@ -26,9 +26,6 @@ unsigned char go, irqLineMode;
 #define SCROLL_X_OVERALL_MAX ((MAPBASE_TILE_WIDTH+8) * 16)-640 // +8 for the UI overlay on the right
 #define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
 
-#define TANKS_COUNT 3
-#define BALLS_COUNT 3
-
 #define TANK_A_START_X 32*10
 #define TANK_A_START_Y 32*2
 #define TANK_B_START_X 32*10
@@ -39,9 +36,12 @@ unsigned char go, irqLineMode;
 #define IRQ_ENABLE 0b00000111
 
 Tank tanks[TANKS_COUNT] = {
-    { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0 },
-    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2 },
-    { SPRITE_NUM_TANK_C, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, 1, 1, 5 }
+    { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0, 0},
+    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2, 1 },
+    { SPRITE_NUM_TANK_C, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, 1, 1, 1, 2 },
+    { SPRITE_NUM_TANK_C+2, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, -1, 1, 3, 3 },
+    { SPRITE_NUM_TANK_C+4, 2, 1, TANK_C_START_X, TANK_C_START_Y, -1, 1, 1, 5, 4 },
+    { SPRITE_NUM_TANK_C+6, 2, 1, TANK_C_START_X, TANK_C_START_Y, -1, -1, 1, 7, 5 }
 };
 
 unsigned char irqHandler() {
@@ -187,7 +187,10 @@ void main() {
     Ball balls[BALLS_COUNT] = {
         {SPRITE_NUM_BALL_A, 0,0,0,0,0,0,0},
         {SPRITE_NUM_BALL_B, 1,0,0,0,0,0,0},
-        {SPRITE_NUM_BALL_C, 2,0,0,0,0,0,0}
+        {SPRITE_NUM_BALL_C, 2,0,0,0,0,0,0},
+        {SPRITE_NUM_BALL_C+2, 2,0,0,0,0,0,0},
+        {SPRITE_NUM_BALL_C+4, 2,0,0,0,0,0,0},
+        {SPRITE_NUM_BALL_C+6, 2,0,0,0,0,0,0},
     };
 
     init();
@@ -209,19 +212,17 @@ void main() {
         clearLayers();
         drawMaze();
 
-        toggle(SPRITE_NUM_TANK_A, 1);
-        toggle(SPRITE_NUM_TANK_A+1, 1);
-        toggle(SPRITE_NUM_TANK_B, 1);
-        toggle(SPRITE_NUM_TANK_B+1, 1);
-        toggle(SPRITE_NUM_TANK_C, 1);
-        toggle(SPRITE_NUM_TANK_C+1, 1);
+        for (i=0; i<TANKS_COUNT*2; i++) {
+            toggle(tanks[i].spriteNum, 1);
+        }
         
         while(1) {
             go = 0;
             joy = joy_read(0);
 
             // Shoot ball (just for tanks 1 and 2 for now)
-            for (i=0; i<TANKS_COUNT-1; i++) {
+            for (i=0; i<TANKS_COUNT; i++) {
+                // Joystick fires for tank A only (tank B is AI for now even though it will be joystick later)
                 firePressed = i==0 ? JOY_BTN_3(joy) : 1;
 
                 if (!balls[i].active && firePressed) {
@@ -237,10 +238,9 @@ void main() {
 
                     balls[i].moveX = ballX;
                     balls[i].moveY = ballY;
-                    // balls[i].spriteNum = SPRITE_NUM_BALL_A;
 
-                    toggle(SPRITE_NUM_BALL_A+(i*2), 1);
-                    toggle(SPRITE_NUM_BALL_A+(i*2)+1, 1);
+                    toggle(balls[i].spriteNum, 1);
+                    toggle(balls[i].spriteNum+1, 1);
                 }
             }
             

@@ -32,6 +32,7 @@ typedef struct Tank {
     short moveY;
     unsigned char speed;
     unsigned char turret;
+    unsigned char ballNum;
 } Tank;
 
 void loadSpriteGraphics();

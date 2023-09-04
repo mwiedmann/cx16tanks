@@ -21,7 +21,7 @@ void spritesConfig() {
     unsigned long spriteGraphicAddress;
 
     // Create 6 ball sprites
-    for (i=0; i<6; i++) {
+    for (i=0; i<BALLS_COUNT*2; i++) {
         VERA.address = SPRITE1_ADDR+(SPRITE_NUM_BALL_A*8)+(i*8);
         VERA.address_hi = SPRITE1_ADDR+(SPRITE_NUM_BALL_A*8)+(i*8)>>16;
         // Set the Increment Mode, turn on bit 4
@@ -41,8 +41,8 @@ void spritesConfig() {
         VERA.data0 = 0b00000000; // 8x8 pixel image
     }
    
-    // Create 6 tank sprites
-    for (i=0; i<6; i++) {
+    // Create tank sprites
+    for (i=0; i<TANKS_COUNT*2; i++) {
         // Point to Sprite 2
         VERA.address = SPRITE1_ADDR+(SPRITE_NUM_TANK_A*8)+(i*8);
         VERA.address_hi = SPRITE1_ADDR+(SPRITE_NUM_TANK_A*8)+(i*8)>>16;
