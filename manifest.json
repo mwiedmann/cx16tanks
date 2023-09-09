@@ -1,0 +1,15 @@
+{
+    "manifest_version": "1.0.0",
+    "name": "Tanks",
+    "author": "Mark Wiedmann",
+    "app_version": "0.2.0",
+    "license": "private",
+    "start_prg": "TANKS.PRG",
+    "resources": [
+        "TANKA.BIN",
+        "TANKB.BIN",
+        "TANKC.BIN",
+        "FONT.BIN",
+        "TANKS.PRG"
+   ]
+}

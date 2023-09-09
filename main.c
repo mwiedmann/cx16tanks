@@ -36,12 +36,12 @@ unsigned char go, irqLineMode;
 #define IRQ_ENABLE 0b00000111
 
 Tank tanks[TANKS_COUNT] = {
-    { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0, 0},
-    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2, 1 },
-    { SPRITE_NUM_TANK_C, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, 1, 1, 1, 2 },
-    { SPRITE_NUM_TANK_C+2, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, -1, 1, 3, 3 },
-    { SPRITE_NUM_TANK_C+4, 2, 1, TANK_C_START_X, TANK_C_START_Y, -1, 1, 1, 5, 4 },
-    { SPRITE_NUM_TANK_C+6, 2, 1, TANK_C_START_X, TANK_C_START_Y, -1, -1, 1, 7, 5 }
+    { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0, 0, 1},
+    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2, 1, 1 },
+    { SPRITE_NUM_TANK_C, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, 1, 1, 1, 2, 60 },
+    { SPRITE_NUM_TANK_C+2, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, -1, 1, 3, 3, 120 },
+    { SPRITE_NUM_TANK_C+4, 2, 1, TANK_C_START_X, TANK_C_START_Y, -1, 1, 1, 5, 4, 180 },
+    { SPRITE_NUM_TANK_C+6, 2, 1, TANK_C_START_X, TANK_C_START_Y, -1, -1, 1, 7, 5, 240 }
 };
 
 unsigned char irqHandler() {
@@ -212,53 +212,41 @@ void main() {
         clearLayers();
         drawMaze();
 
-        for (i=0; i<TANKS_COUNT*2; i++) {
+        for (i=0; i<TANKS_COUNT; i++) {
             toggle(tanks[i].spriteNum, 1);
+            toggle(tanks[i].spriteNum+1, 1);
         }
         
         while(1) {
             go = 0;
             joy = joy_read(0);
 
-            // Shoot ball (just for tanks 1 and 2 for now)
-            for (i=0; i<TANKS_COUNT; i++) {
-                // Joystick fires for tank A only (tank B is AI for now even though it will be joystick later)
-                firePressed = i==0 ? JOY_BTN_3(joy) : 1;
-
-                if (!balls[i].active && firePressed) {
-                    // Shoot in the direction of the turret
-                    turretToXY(tanks[i].turret, &ballX, &ballY);
-
-                    balls[i].active = 1;
-                    balls[i].ticksRemaining = 90;
-
-                    // Middle of tank adjusted for ball size
-                    balls[i].x = (tanks[i].x+16)-4;
-                    balls[i].y = (tanks[i].y+16)-4;
-
-                    balls[i].moveX = ballX;
-                    balls[i].moveY = ballY;
-
-                    toggle(balls[i].spriteNum, 1);
-                    toggle(balls[i].spriteNum+1, 1);
-                }
-            }
-            
             for (i=0; i<BALLS_COUNT; i++) {
                 if (balls[i].active) {
-                    getCollisionTile(balls[i].x+4+balls[i].moveX, balls[i].y+4, &l0Tile);
+                    getCollisionTile(balls[i].x+4+balls[i].moveX, balls[i].y+4+balls[i].moveY, &l0Tile);
 
+                    // Check wall collision
                     if (l0Tile != 0) {
-                        balls[i].moveX*= -1;
+                        // Ball is about to hit a wall
+                        // Check both X and Y moves to see which direction to rebound
+                        getCollisionTile(balls[i].x+4+balls[i].moveX, balls[i].y+4, &l0Tile);
+
+                        if (l0Tile != 0) {
+                            balls[i].moveX*= -1;
+                        } else {
+                            balls[i].x+= balls[i].moveX;
+                        }
+                        
+                        getCollisionTile(balls[i].x+4, balls[i].y+4+balls[i].moveY, &l0Tile);
+
+                        if (l0Tile != 0) {
+                            balls[i].moveY*= -1;
+                        } else {
+                            balls[i].y+= balls[i].moveY;
+                        }
                     } else {
+                        // No wall collision...just move the ball
                         balls[i].x+= balls[i].moveX;
-                    }
-                    
-                    getCollisionTile(balls[i].x+4, balls[i].y+4+balls[i].moveY, &l0Tile);
-
-                    if (l0Tile != 0) {
-                        balls[i].moveY*= -1;
-                    } else {
                         balls[i].y+= balls[i].moveY;
                     }
 
@@ -268,13 +256,45 @@ void main() {
                     balls[i].ticksRemaining--;
                     if (balls[i].ticksRemaining == 0) {
                         balls[i].active = 0;
+                        tanks[i].nextShot = 180; 
                         toggle(balls[i].spriteNum, 0);
                         toggle(balls[i].spriteNum+1, 0);
                     }
                 }
-            }
+            }            
 
+            // Move tanks and check for shots
             for (i=0; i<TANKS_COUNT; i++) {
+                if (!balls[i].active) {
+                    // Cooldown until next shot
+                    if (tanks[i].nextShot > 0) {
+                        tanks[i].nextShot--;
+                    }
+
+                    // Joystick fires for tank A only (tank B is AI for now even though it will be joystick later)
+                    firePressed = i==0
+                        ? JOY_BTN_3(joy) :
+                        tanks[i].nextShot == 0;
+
+                    if (firePressed) {
+                        // Shoot in the direction of the turret
+                        turretToXY(tanks[i].turret, &ballX, &ballY);
+
+                        balls[i].active = 1;
+                        balls[i].ticksRemaining = 90;
+
+                        // Middle of tank adjusted for ball size
+                        balls[i].x = (tanks[i].x+16)-4;
+                        balls[i].y = (tanks[i].y+16)-4;
+
+                        balls[i].moveX = ballX;
+                        balls[i].moveY = ballY;
+
+                        toggle(balls[i].spriteNum, 1);
+                        toggle(balls[i].spriteNum+1, 1);
+                    }
+                }
+
                 if (!tanks[i].isAI) {
                     moveTank(tanks[i].speed, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tanks[i].x, &tanks[i].y);
                 } else {
@@ -287,12 +307,10 @@ void main() {
                 }
 
                 // Rotate the turret
-                if (ticks % 8 == 0 && (
-                        (JOY_BTN_1(joy) || JOY_BTN_2(joy))
-                        || tanks[i].isAI
-                    )
+                if (   (tanks[i].isAI && ticks % 32 == 0) // AI tanks move turrent about every second
+                    || (!tanks[i].isAI && ticks % 16 == 0 && (JOY_BTN_1(joy) || JOY_BTN_2(joy))) // Players can rotate faster
                 ) {
-                    tanks[i].turret+= JOY_BTN_1(joy) ? 1 : -1;
+                    tanks[i].turret+= tanks[i].isAI ? 1 : JOY_BTN_1(joy) ? 1 : -1;
                     if (tanks[i].turret == 255) {
                         tanks[i].turret = 15;
                     } else if (tanks[i].turret == 16) {
@@ -310,7 +328,6 @@ void main() {
             }
 
             
-
             // Waiting for VSYNC
             while(!go);
             ticks++;

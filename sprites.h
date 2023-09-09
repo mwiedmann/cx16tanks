@@ -33,6 +33,7 @@ typedef struct Tank {
     unsigned char speed;
     unsigned char turret;
     unsigned char ballNum;
+    unsigned char nextShot;
 } Tank;
 
 void loadSpriteGraphics();

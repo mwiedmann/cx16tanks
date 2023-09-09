@@ -10,4 +10,4 @@ img:
 	node gimp-convert.js tanka
 
 zip:
-	zip tanks.zip TANKS.PRG manifest.json
+	zip tanks.zip TANKS.PRG TANKA.BIN TANKB.BIN TANKC.BIN FONT.BIN manifest.json
