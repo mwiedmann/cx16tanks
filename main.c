@@ -36,39 +36,107 @@ unsigned char go, irqLineMode;
 #define IRQ_ENABLE 0b00000111
 
 Tank tanks[TANKS_COUNT] = {
-    { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0, 0, 1},
-    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2, 1, 1 },
-    { SPRITE_NUM_TANK_C, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, 1, 1, 1, 2, 60 },
-    { SPRITE_NUM_TANK_C+2, 2, 1, TANK_C_START_X, TANK_C_START_Y, 1, -1, 1, 3, 3, 120 },
-    { SPRITE_NUM_TANK_C+4, 2, 1, TANK_C_START_X, TANK_C_START_Y, -1, 1, 1, 5, 4, 180 },
-    { SPRITE_NUM_TANK_C+6, 2, 1, TANK_C_START_X, TANK_C_START_Y, -1, -1, 1, 7, 5, 240 }
+    { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0, 0, 1, 0 },
+    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2, 1, 1, 0 },
+    { SPRITE_NUM_TANK_C, 2, 1, TANK_C_START_X, TANK_C_START_Y, TANK_C_START_X, TANK_C_START_Y, 1, 1, 1, 1, 2, 60, 0 },
+    { SPRITE_NUM_TANK_C+2, 2, 1, TANK_C_START_X, TANK_C_START_Y, TANK_C_START_X, TANK_C_START_Y, 1, -1, 1, 3, 3, 120, 0 },
+    { SPRITE_NUM_TANK_C+4, 2, 1, TANK_C_START_X, TANK_C_START_Y, TANK_C_START_X, TANK_C_START_Y, -1, 1, 1, 5, 4, 180, 0 },
+    { SPRITE_NUM_TANK_C+6, 2, 1, TANK_C_START_X, TANK_C_START_Y, TANK_C_START_X, TANK_C_START_Y, -1, -1, 1, 7, 5, 240, 0 }
+};
+
+Ball balls[BALLS_COUNT] = {
+    {SPRITE_NUM_BALL_A, 0,0,0,0,0,0,0},
+    {SPRITE_NUM_BALL_B, 1,0,0,0,0,0,0},
+    {SPRITE_NUM_BALL_C, 2,0,0,0,0,0,0},
+    {SPRITE_NUM_BALL_C+2, 2,0,0,0,0,0,0},
+    {SPRITE_NUM_BALL_C+4, 2,0,0,0,0,0,0},
+    {SPRITE_NUM_BALL_C+6, 2,0,0,0,0,0,0},
 };
 
 unsigned char irqHandler() {
+    unsigned char b, t;
+    unsigned char done = 0;
+
     // Check for collisions
     if (VERA.irq_flags & 0b100) {
-        if (VERA.irq_flags & 0b00010000) {
-            tanks[0].x = TANK_A_START_X;
-            tanks[0].y = TANK_A_START_Y;
-            move(tanks[0].spriteNum, tanks[0].x, tanks[0].y, scrollX1, scrollY1, 0);
-            move(tanks[0].spriteNum+1, tanks[0].x, tanks[0].y+240, scrollX2, scrollY2, 1);
-            toggle(SPRITE_NUM_BALL_B, 0);
-            toggle(SPRITE_NUM_BALL_B+1, 0);
-        } else if (VERA.irq_flags & 0b00100000) {
-            tanks[1].x = TANK_B_START_X;
-            tanks[1].y = TANK_B_START_Y;
-            move(tanks[1].spriteNum, tanks[1].x, tanks[1].y, scrollX1, scrollY1, 0);
-            move(tanks[1].spriteNum+1, tanks[1].x, tanks[1].y+240, scrollX2, scrollY2, 1);
-            toggle(SPRITE_NUM_BALL_A, 0);
-            toggle(SPRITE_NUM_BALL_A+1, 0);
-        } else {
-            // neutral tank
+        // Check all bullet/tank collisions
+        for (b=0; b<BALLS_COUNT; b++) {
+            for (t=0; t<TANKS_COUNT; t++) {
+                // Only check active balls against enemies (not same side)
+                if (!balls[b].active || balls[b].side == tanks[t].side) {
+                    continue;
+                }
+
+                // If one rectangle is on left side of other
+                // OR if one rectangle is above other
+                if (balls[b].x > tanks[t].x+31 || tanks[t].x > balls[b].x+7 || balls[b].y > tanks[t].y+31 || tanks[t].y > balls[b].y+7) {
+                    continue;
+                }
+
+                // True collision
+                tanks[t].hit = 1; // mark the tank as hit
+
+                // Hide the ball and mark as not active
+                toggle(balls[b].spriteNum, 0);
+                toggle(balls[b].spriteNum+1, 0);
+                balls[b].active = 0;
+
+                tanks[b].nextShot = 180; // Reset time on tank that owns this bullet
+
+                done = 1;
+                break;
+            }
+
+            if (done) {
+                break;
+            }
+        }
+        
+        if (!done) {
+            // Didn't find a tank/ball collision
+            // Should then be a ball/ball collision
+            for (b=0; b<BALLS_COUNT-1; b++) {
+                for (t=b+1; t<BALLS_COUNT; t++) {
+                    // Only check active balls against other active balls (not same side)
+                    if (!balls[b].active || !balls[t].active) {
+                        continue;
+                    }
+
+                    // If one rectangle is on left side of other
+                    // OR if one rectangle is above other
+                    if (balls[b].x > balls[t].x+7 || balls[t].x > balls[b].x+7 || balls[b].y > balls[t].y+7 || balls[t].y > balls[b].y+7) {
+                        continue;
+                    }
+
+                    // True collision
+                    // Hide the balls and mark as not active
+                    toggle(balls[b].spriteNum, 0);
+                    toggle(balls[b].spriteNum+1, 0);
+                    balls[b].active = 0;
+
+                    toggle(balls[t].spriteNum, 0);
+                    toggle(balls[t].spriteNum+1, 0);
+                    balls[t].active = 0;
+
+                    tanks[b].nextShot = 180; // Reset time on tank that owns this bullet
+                    tanks[t].nextShot = 180; // Reset time on tank that owns this bullet
+                    
+                    done = 1;
+                    break;
+                }
+
+                if (done) {
+                    break;
+                }
+            }
         }
 
         VERA.irq_flags = 0b100;
         return IRQ_HANDLED;
     } else if (VERA.irq_flags & 0b10) {
-       if (irqLineMode == 0) {
+        // Adjust the SCROLL registers for the top/bottom areas
+        // based on the current scan line
+        if (irqLineMode == 0) {
             VERA.irq_raster = 240;
             VERA.irq_enable = IRQ_ENABLE; 
             irqLineMode = 1;
@@ -184,14 +252,6 @@ void turretToXY(unsigned char turret, short *x, short *y) {
 void main() {
     unsigned char l0Tile, joy, aiDir, ticks = 0, i, firePressed;
     short ballX, ballY;
-    Ball balls[BALLS_COUNT] = {
-        {SPRITE_NUM_BALL_A, 0,0,0,0,0,0,0},
-        {SPRITE_NUM_BALL_B, 1,0,0,0,0,0,0},
-        {SPRITE_NUM_BALL_C, 2,0,0,0,0,0,0},
-        {SPRITE_NUM_BALL_C+2, 2,0,0,0,0,0,0},
-        {SPRITE_NUM_BALL_C+4, 2,0,0,0,0,0,0},
-        {SPRITE_NUM_BALL_C+6, 2,0,0,0,0,0,0},
-    };
 
     init();
     createTiles();
@@ -290,12 +350,19 @@ void main() {
                         balls[i].moveX = ballX;
                         balls[i].moveY = ballY;
 
+                        move(balls[i].spriteNum, balls[i].x, balls[i].y, scrollX1, scrollY1, 0);
+                        move(balls[i].spriteNum+1, balls[i].x, balls[i].y+240, scrollX2, scrollY2, 1);
+
                         toggle(balls[i].spriteNum, 1);
                         toggle(balls[i].spriteNum+1, 1);
                     }
                 }
 
-                if (!tanks[i].isAI) {
+                if (tanks[i].hit) {
+                    tanks[i].hit = 0;
+                    tanks[i].x = tanks[i].startX;
+                    tanks[i].y = tanks[i].startY;
+                } else if (!tanks[i].isAI) {
                     moveTank(tanks[i].speed, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tanks[i].x, &tanks[i].y);
                 } else {
                     // AI for Tank

@@ -37,7 +37,7 @@ void spritesConfig() {
         VERA.data0 = 100;
         VERA.data0 = 100;
         VERA.data0 = 100;
-        VERA.data0 = i<2 ? 0b01100000 : i<4 ? 0b01010000 : 0b00000000;
+        VERA.data0 = i<2 ? 0b01100000 : i<4 ? 0b01010000 : 0b00110000;
         VERA.data0 = 0b00000000; // 8x8 pixel image
     }
    
@@ -98,15 +98,32 @@ void move(unsigned char spriteNum, short x, short y, short scrollX, short scroll
 
     if (finalY >= 480 || finalY < 0 || finalX == 640) {
         VERA.data0 = 640;
-        VERA.data0 = 640>>8;
+        VERA.data0 = 0b10000000 | 640>>8;
         VERA.data0 = 480;
         VERA.data0 = 480>>8;
     } else {
         VERA.data0 = finalX;
-        VERA.data0 = finalX>>8;
+        VERA.data0 = 0b10000000 | finalX>>8;
         VERA.data0 = finalY;
         VERA.data0 = finalY>>8;
     }
+}
+
+void moveHide(unsigned char spriteNum) {
+    unsigned short finalY;
+
+    // Update Sprite 1 X/Y Position
+    // Point to Sprite 1 byte 2
+    VERA.address = SPRITE1_ADDR+(spriteNum*8)+2;
+    VERA.address_hi = (SPRITE1_ADDR+(spriteNum*8))>>16;
+    // Set the Increment Mode, turn on bit 4
+    VERA.address_hi |= 0b10000;
+
+    finalY = 640 + (32*spriteNum);
+    VERA.data0 = 0;
+    VERA.data0 = 0b10000000;
+    VERA.data0 = finalY;
+    VERA.data0 = finalY>>8;
 }
 
 void tankTurret(unsigned char turret, unsigned char spriteNum, unsigned char tankGraphic) {
