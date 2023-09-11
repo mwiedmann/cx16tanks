@@ -3,79 +3,7 @@
 
 #include "config.h"
 #include "utils.h"
-
-#define SECTION_COUNT 4
-#define SECTION_SIZE 10
-#define MAZE_SECTIONS 6
-
-unsigned char starter[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-0, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-0, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char t1[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 1, 0, 0, 1,
-0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
-1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
-1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char t2[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-1, 1, 1, 1, 1, 1, 0, 0, 1, 1,
-0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-1, 0, 0, 1, 0, 0, 1, 1, 1, 1,
-1, 0, 0, 0, 0, 0, 1, 1, 1, 1,
-1, 0, 0, 0, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char t3[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 1, 0, 0, 1,
-0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-1, 1, 1, 1, 1, 1, 1, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char t4[] = {
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 1, 1, 1, 1, 0, 0, 1,
-0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-};
-
-unsigned char* sections[] = {
-    t1, t2, t3, t4
-};
+#include "sprites.h"
 
 void getCollisionTile(unsigned short x, unsigned short y, unsigned char *l0Tile) {
     unsigned long tileAddr;
@@ -156,48 +84,38 @@ unsigned long mapBaseFromTileXY(unsigned short x, unsigned short y) {
     return L0_MAPBASE_ADDR + (y * MAPBASE_TILE_WIDTH * 2) + (x * 2);
 }
 
-void drawMaze() {
+void drawMaze(Tank *tanks) {
     // Note we need a `short` here because there are more than 255 tiles
-    unsigned char sectionX, sectionY, sectionNum, lastSectionNum, x, y, xCount, yCount;
+    unsigned short x, y;
+    unsigned short bankAddr;
+    unsigned char bankValue;
     unsigned long addr;
 
-    for (sectionY=0; sectionY<MAZE_SECTIONS; sectionY++) {
-        for (sectionX=0; sectionX<MAZE_SECTIONS; sectionX++) {
-            lastSectionNum = sectionNum;
-            do {
-                sectionNum = rand();
-                sectionNum>>=6;
-            } while(sectionNum == lastSectionNum || sectionNum>=SECTION_COUNT);
-            
-            for (y = sectionY * SECTION_SIZE, yCount=0; yCount < SECTION_SIZE; y++, yCount++){
-                for (x = sectionX * SECTION_SIZE, xCount=0; xCount < SECTION_SIZE; x++, xCount++) {
-                    addr = mapBaseFromTileXY(x,y);
+    loadFileToBankedRAM("maze.bin", 2, 0);
 
-                    VERA.address = addr;
-                    VERA.address_hi = addr>>16;
-                    // Always set the Increment Mode, turn on bit 4
-                    VERA.address_hi |= 0b10000;
-
-                    VERA.data0 = sections[sectionNum][(yCount*SECTION_SIZE)+xCount];
-                    VERA.data0 = 0;
-                }
-            }
-        }
-    }
+    BANK_NUM = 2;
 
     for (y=0; y<MAPBASE_TILE_HEIGHT; y++) {
         for (x=0; x<MAPBASE_TILE_WIDTH; x++) {
-            if (y == 0 || y == (MAPBASE_TILE_HEIGHT - 1) || x == 0 || x == (MAPBASE_TILE_WIDTH - 1)) {
-                addr = mapBaseFromTileXY(x,y);
-
-                VERA.address = addr;
-                VERA.address_hi = addr>>16;
-                // Always set the Increment Mode, turn on bit 4
-                VERA.address_hi |= 0b10000;
-
-                VERA.data0 = 1;
-                VERA.data0 = 0;
+            bankAddr = ((unsigned short)BANK_RAM) + (y*MAPBASE_TILE_HEIGHT) + x;
+            bankValue =  (*(unsigned char*)(bankAddr));
+            
+            if (bankValue > 1) {
+                tanks[bankValue-2].x = x*16;
+                tanks[bankValue-2].y = y*16;
+                tanks[bankValue-2].startX = x*16;
+                tanks[bankValue-2].startY = y*16;
             }
+
+            addr = mapBaseFromTileXY(x,y);
+
+            VERA.address = addr;
+            VERA.address_hi = addr>>16;
+            // Always set the Increment Mode, turn on bit 4
+            VERA.address_hi |= 0b10000;
+
+            VERA.data0 = bankValue == 1 ? 1 : 0;
+            VERA.data0 = 0;
         }
     }
 }

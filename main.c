@@ -270,7 +270,7 @@ void main() {
     while(1) {
         // Set the zoom level
         clearLayers();
-        drawMaze();
+        drawMaze(tanks);
 
         for (i=0; i<TANKS_COUNT; i++) {
             toggle(tanks[i].spriteNum, 1);
