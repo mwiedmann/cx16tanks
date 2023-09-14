@@ -177,11 +177,11 @@ unsigned char moveTank(unsigned char moveLeft, unsigned char moveRight, unsigned
 
     if (moveLeft) {
         getCollisionTile(tank->x-tank->speed, tank->y, &l0Tile);
-        if (l0Tile == 0) {
+        if (l0Tile == 0 || l0Tile == tank->wallId) {
             getCollisionTile(tank->x-tank->speed, tank->y+16, &l0Tile);
-            if (l0Tile == 0) {
+            if (l0Tile == 0 || l0Tile == tank->wallId) {
                 getCollisionTile(tank->x-tank->speed, tank->y+31, &l0Tile);
-                if (l0Tile == 0) {
+                if (l0Tile == 0 || l0Tile == tank->wallId) {
                     tank->x-= tank->speed;
                     moved=1;
                 }
@@ -189,11 +189,11 @@ unsigned char moveTank(unsigned char moveLeft, unsigned char moveRight, unsigned
         }
     } else if (moveRight) {
         getCollisionTile(tank->x+31+tank->speed, tank->y, &l0Tile);
-        if (l0Tile == 0) {
+        if (l0Tile == 0 || l0Tile == tank->wallId) {
             getCollisionTile(tank->x+31+tank->speed, tank->y+16, &l0Tile);
-            if (l0Tile == 0) {
+            if (l0Tile == 0 || l0Tile == tank->wallId) {
                 getCollisionTile(tank->x+31+tank->speed, tank->y+31, &l0Tile);
-                if (l0Tile == 0) {
+                if (l0Tile == 0 || l0Tile == tank->wallId) {
                     tank->x+= tank->speed;
                     moved=1;
                 }
@@ -203,11 +203,11 @@ unsigned char moveTank(unsigned char moveLeft, unsigned char moveRight, unsigned
 
     if (moveUp) {
         getCollisionTile(tank->x, tank->y-tank->speed, &l0Tile);
-        if (l0Tile == 0) {
+        if (l0Tile == 0 || l0Tile == tank->wallId) {
             getCollisionTile(tank->x+16, tank->y-tank->speed, &l0Tile);
-            if (l0Tile == 0) {
+            if (l0Tile == 0 || l0Tile == tank->wallId) {
                 getCollisionTile(tank->x+31, tank->y-tank->speed, &l0Tile);
-                if (l0Tile == 0) {
+                if (l0Tile == 0 || l0Tile == tank->wallId) {
                     tank->y-= tank->speed;
                     moved=1;
                 }
@@ -215,11 +215,11 @@ unsigned char moveTank(unsigned char moveLeft, unsigned char moveRight, unsigned
         }
     } else if (moveDown) {
         getCollisionTile(tank->x, tank->y+31+tank->speed, &l0Tile);
-        if (l0Tile == 0) {
+        if (l0Tile == 0 || l0Tile == tank->wallId) {
             getCollisionTile(tank->x+16, tank->y+31+tank->speed, &l0Tile);
-            if (l0Tile == 0) {
+            if (l0Tile == 0 || l0Tile == tank->wallId) {
                 getCollisionTile(tank->x+31, tank->y+31+tank->speed, &l0Tile);
-                if (l0Tile == 0) {
+                if (l0Tile == 0 || l0Tile == tank->wallId) {
                     tank->y+= tank->speed;
                     moved=1;
                 }

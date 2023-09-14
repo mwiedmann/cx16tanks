@@ -25,6 +25,7 @@ typedef struct Ball {
 typedef struct Tank {
     unsigned char spriteNum;
     unsigned char side;
+    unsigned char wallId;
     unsigned char isAI;
     short startX;
     short startY;

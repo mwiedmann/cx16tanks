@@ -5,6 +5,10 @@
 #include "utils.h"
 #include "sprites.h"
 
+// The tank walls in the file come in with IDs starting at 8
+// Tank walls in the tileset start at 2 (8-2=6)
+#define TANK_WALL_TILE_OFFSET 6
+
 void getCollisionTile(unsigned short x, unsigned short y, unsigned char *l0Tile) {
     unsigned long tileAddr;
     unsigned char tileX, tileY;
@@ -40,15 +44,40 @@ void createTiles() {
         VERA.data0 = 15;
     }
 
-    // Solid tile2
+    // Player 1 wall tile2
+    for (i=0; i<256; i++) {
+        VERA.data0 = 10;
+    }
+
+    // Player 2 wall tile2
+    for (i=0; i<256; i++) {
+        VERA.data0 = 9;
+    }
+
+    // Enemy 1 wall tile2
     for (i=0; i<256; i++) {
         VERA.data0 = 8;
+    }
+
+    // Enemy 2 wall tile2
+    for (i=0; i<256; i++) {
+        VERA.data0 = 7;
+    }
+
+    // Enemy 3 wall tile2
+    for (i=0; i<256; i++) {
+        VERA.data0 = 6;
+    }
+
+    // Enemy 4 wall tile2
+    for (i=0; i<256; i++) {
+        VERA.data0 = 5;
     }
 
     // Divider tile
     for (y=0; y<16; y++) {
         for (x=0; x<16; x++) {
-            VERA.data0 = y>7 ? 8 : 0;
+            VERA.data0 = y>7 ? 4 : 0;
         }
     }
 
@@ -88,7 +117,7 @@ void drawMaze(Tank *tanks) {
     // Note we need a `short` here because there are more than 255 tiles
     unsigned short x, y;
     unsigned short bankAddr;
-    unsigned char bankValue;
+    unsigned char bankValue, tileValue;
     unsigned long addr;
 
     loadFileToBankedRAM("maze.bin", 2, 0);
@@ -99,12 +128,16 @@ void drawMaze(Tank *tanks) {
         for (x=0; x<MAPBASE_TILE_WIDTH; x++) {
             bankAddr = ((unsigned short)BANK_RAM) + (y*MAPBASE_TILE_HEIGHT) + x;
             bankValue =  (*(unsigned char*)(bankAddr));
-            
-            if (bankValue > 1) {
+            tileValue = bankValue;
+
+            if (bankValue >= 2 && bankValue <= 7) {
+                tileValue = 0;
                 tanks[bankValue-2].x = x*16;
                 tanks[bankValue-2].y = y*16;
                 tanks[bankValue-2].startX = x*16;
                 tanks[bankValue-2].startY = y*16;
+            } else if (bankValue >= 8) {
+                tileValue = bankValue - TANK_WALL_TILE_OFFSET; // Wall that a certain tank can go through
             }
 
             addr = mapBaseFromTileXY(x,y);
@@ -114,7 +147,7 @@ void drawMaze(Tank *tanks) {
             // Always set the Increment Mode, turn on bit 4
             VERA.address_hi |= 0b10000;
 
-            VERA.data0 = bankValue == 1 ? 1 : 0;
+            VERA.data0 = tileValue;
             VERA.data0 = 0;
         }
     }

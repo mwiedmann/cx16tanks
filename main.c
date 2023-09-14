@@ -31,12 +31,12 @@ unsigned char go, irqLineMode;
 #define ENEMY_TANKS_INDEX 2
 
 Tank tanks[TANKS_COUNT] = {
-    { SPRITE_NUM_TANK_A,   0, 0, 0, 0, 0, 0,  1,  1, 2, 0, 0,   1, 0 },
-    { SPRITE_NUM_TANK_B,   1, 1, 0, 0, 0, 0,  1,  1, 1, 2, 1,   1, 0 },
-    { SPRITE_NUM_TANK_C,   2, 1, 0, 0, 0, 0,  1,  1, 1, 1, 2,  60, 0 },
-    { SPRITE_NUM_TANK_C+2, 2, 1, 0, 0, 0, 0,  1, -1, 1, 3, 3, 120, 0 },
-    { SPRITE_NUM_TANK_C+4, 2, 1, 0, 0, 0, 0, -1,  1, 1, 5, 4, 180, 0 },
-    { SPRITE_NUM_TANK_C+6, 2, 1, 0, 0, 0, 0, -1, -1, 1, 7, 5, 240, 0 }
+    { SPRITE_NUM_TANK_A,   0, 2, 0, 0, 0, 0, 0,  1,  1, 2, 0, 0,   1, 0 },
+    { SPRITE_NUM_TANK_B,   1, 3, 1, 0, 0, 0, 0,  1,  1, 1, 2, 1,   1, 0 },
+    { SPRITE_NUM_TANK_C,   2, 4, 1, 0, 0, 0, 0,  1,  1, 1, 1, 2,  60, 0 },
+    { SPRITE_NUM_TANK_C+2, 2, 5, 1, 0, 0, 0, 0,  1, -1, 1, 3, 3, 120, 0 },
+    { SPRITE_NUM_TANK_C+4, 2, 6, 1, 0, 0, 0, 0, -1,  1, 1, 5, 4, 180, 0 },
+    { SPRITE_NUM_TANK_C+6, 2, 7, 1, 0, 0, 0, 0, -1, -1, 1, 7, 5, 240, 0 }
 };
 
 Ball balls[BALLS_COUNT] = {
