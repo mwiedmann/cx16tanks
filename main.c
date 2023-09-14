@@ -26,22 +26,17 @@ unsigned char go, irqLineMode;
 #define SCROLL_X_OVERALL_MAX ((MAPBASE_TILE_WIDTH+8) * 16)-640 // +8 for the UI overlay on the right
 #define SCROLL_Y_OVERALL_MAX (MAPBASE_TILE_HEIGHT * 16)-240
 
-#define TANK_A_START_X 32*10
-#define TANK_A_START_Y 32*2
-#define TANK_B_START_X 32*10
-#define TANK_B_START_Y 32*7
-#define TANK_C_START_X 32*17
-#define TANK_C_START_Y 32*5
-
 #define IRQ_ENABLE 0b00000111
 
+#define ENEMY_TANKS_INDEX 2
+
 Tank tanks[TANKS_COUNT] = {
-    { SPRITE_NUM_TANK_A, 0, 0, TANK_A_START_X, TANK_A_START_Y, TANK_A_START_X, TANK_A_START_Y, 1, 1, 2, 0, 0, 1, 0 },
-    { SPRITE_NUM_TANK_B, 1, 1, TANK_B_START_X, TANK_B_START_Y, TANK_B_START_X, TANK_B_START_Y, 1, 1, 1, 2, 1, 1, 0 },
-    { SPRITE_NUM_TANK_C, 2, 1, TANK_C_START_X, TANK_C_START_Y, TANK_C_START_X, TANK_C_START_Y, 1, 1, 1, 1, 2, 60, 0 },
-    { SPRITE_NUM_TANK_C+2, 2, 1, TANK_C_START_X, TANK_C_START_Y, TANK_C_START_X, TANK_C_START_Y, 1, -1, 1, 3, 3, 120, 0 },
-    { SPRITE_NUM_TANK_C+4, 2, 1, TANK_C_START_X, TANK_C_START_Y, TANK_C_START_X, TANK_C_START_Y, -1, 1, 1, 5, 4, 180, 0 },
-    { SPRITE_NUM_TANK_C+6, 2, 1, TANK_C_START_X, TANK_C_START_Y, TANK_C_START_X, TANK_C_START_Y, -1, -1, 1, 7, 5, 240, 0 }
+    { SPRITE_NUM_TANK_A,   0, 0, 0, 0, 0, 0,  1,  1, 2, 0, 0,   1, 0 },
+    { SPRITE_NUM_TANK_B,   1, 1, 0, 0, 0, 0,  1,  1, 1, 2, 1,   1, 0 },
+    { SPRITE_NUM_TANK_C,   2, 1, 0, 0, 0, 0,  1,  1, 1, 1, 2,  60, 0 },
+    { SPRITE_NUM_TANK_C+2, 2, 1, 0, 0, 0, 0,  1, -1, 1, 3, 3, 120, 0 },
+    { SPRITE_NUM_TANK_C+4, 2, 1, 0, 0, 0, 0, -1,  1, 1, 5, 4, 180, 0 },
+    { SPRITE_NUM_TANK_C+6, 2, 1, 0, 0, 0, 0, -1, -1, 1, 7, 5, 240, 0 }
 };
 
 Ball balls[BALLS_COUNT] = {
@@ -54,8 +49,7 @@ Ball balls[BALLS_COUNT] = {
 };
 
 unsigned char irqHandler() {
-    unsigned char b, t;
-    unsigned char done = 0;
+    unsigned char b, t, handled = IRQ_NOT_HANDLED;
 
     // Check for collisions
     if (VERA.irq_flags & 0b100) {
@@ -75,6 +69,9 @@ unsigned char irqHandler() {
 
                 // True collision
                 tanks[t].hit = 1; // mark the tank as hit
+                // Hide the tank
+                toggle(tanks[t].spriteNum, 0);
+                toggle(tanks[t].spriteNum+1, 0);
 
                 // Hide the ball and mark as not active
                 toggle(balls[b].spriteNum, 0);
@@ -82,57 +79,68 @@ unsigned char irqHandler() {
                 balls[b].active = 0;
 
                 tanks[b].nextShot = 180; // Reset time on tank that owns this bullet
-
-                done = 1;
-                break;
-            }
-
-            if (done) {
-                break;
             }
         }
         
-        if (!done) {
-            // Didn't find a tank/ball collision
-            // Should then be a ball/ball collision
-            for (b=0; b<BALLS_COUNT-1; b++) {
-                for (t=b+1; t<BALLS_COUNT; t++) {
-                    // Only check active balls against other active balls (not same side)
-                    if (!balls[b].active || !balls[t].active) {
-                        continue;
-                    }
-
-                    // If one rectangle is on left side of other
-                    // OR if one rectangle is above other
-                    if (balls[b].x > balls[t].x+7 || balls[t].x > balls[b].x+7 || balls[b].y > balls[t].y+7 || balls[t].y > balls[b].y+7) {
-                        continue;
-                    }
-
-                    // True collision
-                    // Hide the balls and mark as not active
-                    toggle(balls[b].spriteNum, 0);
-                    toggle(balls[b].spriteNum+1, 0);
-                    balls[b].active = 0;
-
-                    toggle(balls[t].spriteNum, 0);
-                    toggle(balls[t].spriteNum+1, 0);
-                    balls[t].active = 0;
-
-                    tanks[b].nextShot = 180; // Reset time on tank that owns this bullet
-                    tanks[t].nextShot = 180; // Reset time on tank that owns this bullet
-                    
-                    done = 1;
-                    break;
+        // Could be a ball/ball collision
+        for (b=0; b<BALLS_COUNT-1; b++) {
+            for (t=b+1; t<BALLS_COUNT; t++) {
+                // Only check active balls against other active balls (not same side)
+                if (!balls[b].active || !balls[t].active) {
+                    continue;
                 }
 
-                if (done) {
-                    break;
+                // If one rectangle is on left side of other
+                // OR if one rectangle is above other
+                if (balls[b].x > balls[t].x+7 || balls[t].x > balls[b].x+7 || balls[b].y > balls[t].y+7 || balls[t].y > balls[b].y+7) {
+                    continue;
+                }
+
+                // True collision
+                // Hide the balls and mark as not active
+                toggle(balls[b].spriteNum, 0);
+                toggle(balls[b].spriteNum+1, 0);
+                balls[b].active = 0;
+
+                toggle(balls[t].spriteNum, 0);
+                toggle(balls[t].spriteNum+1, 0);
+                balls[t].active = 0;
+
+                tanks[b].nextShot = 180; // Reset time on tank that owns this bullet
+                tanks[t].nextShot = 180; // Reset time on tank that owns this bullet
+            }
+        }
+    
+        // Must be a tank/tank collision
+        for (b=0; b<TANKS_COUNT-1; b++) {
+            for (t=b+1; t<TANKS_COUNT; t++) {
+                // If one rectangle is on left side of other
+                // OR if one rectangle is above other
+                if (tanks[b].x > tanks[t].x+31 || tanks[t].x > tanks[b].x+31 || tanks[b].y > tanks[t].y+31 || tanks[t].y > tanks[b].y+31) {
+                    continue;
+                }
+
+                // Player tanks
+                // This should always be the case as the CPUs will avoid each other
+                if (tanks[b].side == 0 || tanks[b].side == 1) {
+                    tanks[b].hit = 1; // mark the tank as hit
+                    // Hide the tank
+                    toggle(tanks[b].spriteNum, 0);
+                    toggle(tanks[b].spriteNum+1, 0);
+                }
+
+                // See if the other tank was a player tank
+                if (tanks[t].side == 0 || tanks[t].side == 1) {
+                    tanks[t].hit = 1; // mark the tank as hit
+                    // Hide the tank
+                    toggle(tanks[t].spriteNum, 0);
+                    toggle(tanks[t].spriteNum+1, 0);
                 }
             }
         }
 
         VERA.irq_flags = 0b100;
-        return IRQ_HANDLED;
+        handled = IRQ_HANDLED;
     } else if (VERA.irq_flags & 0b10) {
         // Adjust the SCROLL registers for the top/bottom areas
         // based on the current scan line
@@ -201,15 +209,13 @@ unsigned char irqHandler() {
         }
         
         VERA.irq_flags = 0b10;
-
-        return IRQ_HANDLED; 
+        handled = IRQ_HANDLED;
     } else {
         go = 1;
-        return IRQ_HANDLED;
+        handled = IRQ_HANDLED;
     }
 
-    // return IRQ_HANDLED; 
-    return IRQ_NOT_HANDLED;
+    return handled;
 }
 
 void dirToXY(unsigned char dir, short *x, short *y) {
@@ -250,8 +256,8 @@ void turretToXY(unsigned char turret, short *x, short *y) {
 }
 
 void main() {
-    unsigned char l0Tile, joy, aiDir, ticks = 0, i, firePressed;
-    short ballX, ballY;
+    unsigned char l0Tile, joy, aiDir, ticks = 0, i, firePressed, t;
+    short ballX, ballY, lastX, lastY;
 
     init();
     createTiles();
@@ -358,18 +364,47 @@ void main() {
                     }
                 }
 
+                // If a tank was hit, move it to the start
+                // We will re-enable it after it has moved
                 if (tanks[i].hit) {
-                    tanks[i].hit = 0;
                     tanks[i].x = tanks[i].startX;
                     tanks[i].y = tanks[i].startY;
-                } else if (!tanks[i].isAI) {
-                    moveTank(tanks[i].speed, JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tanks[i].x, &tanks[i].y);
+                }
+                
+                if (!tanks[i].isAI) {
+                    moveTank(JOY_LEFT(joy), JOY_RIGHT(joy), JOY_UP(joy), JOY_DOWN(joy), &tanks[i]);
                 } else {
                     // AI for Tank
-                    while (!moveTank(tanks[i].speed, tanks[i].moveX == -1, tanks[i].moveX == 1, tanks[i].moveY == -1, tanks[i].moveY == 1, &tanks[i].x, &tanks[i].y)) {
+                    lastX = tanks[i].x;
+                    lastY = tanks[i].y;
+                    
+                    while (!moveTank(tanks[i].moveX == -1, tanks[i].moveX == 1, tanks[i].moveY == -1, tanks[i].moveY == 1, &tanks[i])) {
                         aiDir = rand();
                         aiDir>>=5;
                         dirToXY(aiDir, &tanks[i].moveX, &tanks[i].moveY);
+                    }
+
+                    // Check if enemy AI collides with any other enemy AI tanks
+                    if (tanks[i].side == 2) {
+                        for (t=ENEMY_TANKS_INDEX; t<TANKS_COUNT; t++) {
+                            // Skip itself
+                            if (t == i) {
+                                continue;
+                            }
+
+                            if (tanks[i].x > tanks[t].x+31 || tanks[t].x > tanks[i].x+31 || tanks[i].y > tanks[t].y+31 || tanks[t].y > tanks[i].y+31) {
+                                continue;
+                            }
+
+                            // Collision, move back and pick new direction
+                            tanks[i].x = lastX;
+                            tanks[i].y = lastY;
+                            aiDir = rand();
+                            aiDir>>=5;
+                            dirToXY(aiDir, &tanks[i].moveX, &tanks[i].moveY);
+
+                            break;
+                        }
                     }
                 }
 
@@ -392,6 +427,13 @@ void main() {
                 move(tanks[i].spriteNum, tanks[i].x, tanks[i].y, scrollX1, scrollY1, 0);
                 // Tank "shadow" on 2nd screen
                 move(tanks[i].spriteNum+1, tanks[i].x, tanks[i].y+240, scrollX2, scrollY2, 1);
+
+                // If a tank was hit, re-enable it now that it has moved back to the start
+                if (tanks[i].hit) {
+                    tanks[i].hit = 0;
+                    toggle(tanks[i].spriteNum, 1);
+                    toggle(tanks[i].spriteNum+1, 1);
+                }
             }
 
             

@@ -60,7 +60,7 @@ void spritesConfig() {
         VERA.data0 = 100;
         VERA.data0 = 100;
         VERA.data0 = 100;
-        VERA.data0 = i<2 ? 0b00010000 : i<4 ? 0b00100000 : 0b00000000;
+        VERA.data0 = i<2 ? 0b10010000 : i<4 ? 0b10100000 : 0b11000000;
         VERA.data0 = 0b10100000; // 32x32 pixel image
     }
 }
@@ -171,30 +171,30 @@ void tankTurret(unsigned char turret, unsigned char spriteNum, unsigned char tan
     VERA.data0 = VERA.data0 | vFlip<<1 | hFlip;
 }
 
-unsigned char moveTank(unsigned char speed, unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, short *x, short *y) {
+unsigned char moveTank(unsigned char moveLeft, unsigned char moveRight, unsigned char moveUp, unsigned char moveDown, Tank *tank) {
     unsigned char l0Tile;
     unsigned char moved = 0;
 
     if (moveLeft) {
-        getCollisionTile((*x)-speed, (*y), &l0Tile);
+        getCollisionTile(tank->x-tank->speed, tank->y, &l0Tile);
         if (l0Tile == 0) {
-            getCollisionTile((*x)-speed, (*y)+16, &l0Tile);
+            getCollisionTile(tank->x-tank->speed, tank->y+16, &l0Tile);
             if (l0Tile == 0) {
-                getCollisionTile((*x)-speed, (*y)+31, &l0Tile);
+                getCollisionTile(tank->x-tank->speed, tank->y+31, &l0Tile);
                 if (l0Tile == 0) {
-                    (*x)-= speed;
+                    tank->x-= tank->speed;
                     moved=1;
                 }
             }
         }
     } else if (moveRight) {
-        getCollisionTile((*x)+31+speed, (*y), &l0Tile);
+        getCollisionTile(tank->x+31+tank->speed, tank->y, &l0Tile);
         if (l0Tile == 0) {
-            getCollisionTile((*x)+31+speed, (*y)+16, &l0Tile);
+            getCollisionTile(tank->x+31+tank->speed, tank->y+16, &l0Tile);
             if (l0Tile == 0) {
-                getCollisionTile((*x)+31+speed, (*y)+31, &l0Tile);
+                getCollisionTile(tank->x+31+tank->speed, tank->y+31, &l0Tile);
                 if (l0Tile == 0) {
-                    (*x)+= speed;
+                    tank->x+= tank->speed;
                     moved=1;
                 }
             }
@@ -202,25 +202,25 @@ unsigned char moveTank(unsigned char speed, unsigned char moveLeft, unsigned cha
     }
 
     if (moveUp) {
-        getCollisionTile((*x), (*y)-speed, &l0Tile);
+        getCollisionTile(tank->x, tank->y-tank->speed, &l0Tile);
         if (l0Tile == 0) {
-            getCollisionTile((*x)+16, (*y)-speed, &l0Tile);
+            getCollisionTile(tank->x+16, tank->y-tank->speed, &l0Tile);
             if (l0Tile == 0) {
-                getCollisionTile((*x)+31, (*y)-speed, &l0Tile);
+                getCollisionTile(tank->x+31, tank->y-tank->speed, &l0Tile);
                 if (l0Tile == 0) {
-                    (*y)-= speed;
+                    tank->y-= tank->speed;
                     moved=1;
                 }
             }
         }
     } else if (moveDown) {
-        getCollisionTile((*x), (*y)+31+speed, &l0Tile);
+        getCollisionTile(tank->x, tank->y+31+tank->speed, &l0Tile);
         if (l0Tile == 0) {
-            getCollisionTile((*x)+16, (*y)+31+speed, &l0Tile);
+            getCollisionTile(tank->x+16, tank->y+31+tank->speed, &l0Tile);
             if (l0Tile == 0) {
-                getCollisionTile((*x)+31, (*y)+31+speed, &l0Tile);
+                getCollisionTile(tank->x+31, tank->y+31+tank->speed, &l0Tile);
                 if (l0Tile == 0) {
-                    (*y)+= speed;
+                    tank->y+= tank->speed;
                     moved=1;
                 }
             }
