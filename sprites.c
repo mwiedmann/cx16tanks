@@ -78,8 +78,8 @@ void move(unsigned char spriteNum, short x, short y, short scrollX, short scroll
     short finalX, finalY;
 
     finalY = y-scrollY;
-    if ((zone == 0 && finalY >= 224) ||
-        (zone == 1 && finalY<=224)) {
+    if ((zone == 0 && finalY >= 212) ||
+        (zone == 1 && finalY<=240)) {
         finalY = 480;
     }
 
